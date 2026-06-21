@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shamal Platform</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1220; --card:#101a2b; --muted:#9fb0c9; --accent:#4ea2ff; --ok:#20c997; --warn:#f59f00; --danger:#ff6b6b; }
+    body { margin:0; font-family: Inter, system-ui, Arial, sans-serif; background:var(--bg); color:#eaf2ff; }
+    header { padding:14px 18px; border-bottom:1px solid #21304c; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .brand { font-weight:700; letter-spacing:.3px; }
+    .small { color:var(--muted); font-size:12px; }
+    .auth { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    input,select,button,textarea { background:#0e1727; color:#eaf2ff; border:1px solid #304462; border-radius:8px; padding:8px 10px; font-size:13px; }
+    button { cursor:pointer; background:#193356; }
+    button:hover { background:#214271; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    main { padding:12px; display:grid; grid-template-columns:220px 1fr; gap:12px; min-height:calc(100vh - 70px);}
+    nav { background:var(--card); border:1px solid #23344f; border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+    nav button { text-align:left; }
+    section { display:none; background:var(--card); border:1px solid #23344f; border-radius:12px; padding:12px; }
+    section.active { display:block; }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:10px; margin-bottom:12px;}
+    .kpi { background:#0f2137; border:1px solid #294466; border-radius:10px; padding:10px; }
+    .kpi .v { font-size:24px; font-weight:700; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th,td { border-bottom:1px solid #2b3f5e; padding:7px; text-align:left; vertical-align:top; }
+    .pill { padding:2px 8px; border-radius:999px; font-size:11px; display:inline-block; }
+    .ok { background:rgba(32,201,151,.2); color:#7bf6cd; }
+    .bad { background:rgba(255,107,107,.2); color:#ff9a9a; }
+    .warn { background:rgba(245,159,0,.2); color:#ffca75; }
+    .role-admin { background:rgba(78,162,255,.25); color:#9fd0ff; }
+    .role-operator { background:rgba(32,201,151,.2); color:#7bf6cd; }
+    .role-viewer { background:rgba(159,176,201,.2); color:#c8d6ea; }
+    .pre { white-space:pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:#0a1322; border:1px solid #22354f; border-radius:8px; padding:8px; max-height:220px; overflow:auto; }
+    .statusline { font-size:12px; color:var(--muted);}
+    .player-wrap { background:#060d18; border:1px solid #294466; border-radius:10px; overflow:hidden; margin:10px 0; min-height:280px; position:relative; }
+    #livePlayer { width:100%; max-height:420px; background:#000; display:block; }
+    #webrtcFrame { width:100%; height:420px; border:0; display:none; }
+    .player-placeholder { padding:40px; text-align:center; color:var(--muted); }
+    .url-list { font-size:12px; color:var(--muted); margin-top:8px; }
+    .url-list code { color:#b8d4ff; word-break:break-all; }
+    .overlay { position:fixed; inset:0; background:rgba(5,10,20,.92); display:flex; align-items:center; justify-content:center; z-index:100; }
+    .overlay.hidden { display:none; }
+    .card { background:var(--card); border:1px solid #2a4060; border-radius:14px; padding:22px; width:min(420px,92vw); }
+    .card h2 { margin:0 0 8px; font-size:20px; }
+    .card label { display:block; margin:10px 0 4px; font-size:12px; color:var(--muted); }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:200; display:none; align-items:center; justify-content:center; }
+    .modal-backdrop.open { display:flex; }
+    .modal { background:#101a2b; border:1px solid #3a5578; border-radius:12px; padding:18px; width:min(480px,94vw); }
+    .modal h3 { margin-top:0; }
+    .danger-text { color:#ff9a9a; font-size:13px; }
+    .ops-layout { display:grid; grid-template-columns:minmax(260px,300px) 1fr; gap:14px; }
+    .ops-card { background:#0c1628; border:1px solid #294466; border-radius:12px; padding:12px; }
+    .ops-card h4 { margin:0 0 8px; font-size:13px; color:#9fd0ff; font-weight:600; }
+    .ops-hud { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
+    .ops-hud .m { background:#0a1322; border:1px solid #22354f; border-radius:8px; padding:8px; }
+    .ops-hud .m .lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+    .ops-hud .m .val { font-size:15px; font-weight:700; margin-top:2px; }
+    .readiness { display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+    .readiness-dot { width:10px; height:10px; border-radius:50%; background:var(--warn); box-shadow:0 0 8px rgba(245,159,0,.5); }
+    .readiness-dot.ready { background:var(--ok); box-shadow:0 0 8px rgba(32,201,151,.5); }
+    .readiness-dot.offline { background:var(--danger); box-shadow:0 0 8px rgba(255,107,107,.5); }
+    .ops-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .ops-tabs button { font-size:12px; padding:6px 10px; border-radius:999px; }
+    .ops-tabs button.active { background:#2a5a9a; border-color:#4ea2ff; }
+    .ops-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:8px; }
+    .op-btn { display:flex; flex-direction:column; align-items:flex-start; gap:4px; text-align:left; min-height:64px; padding:10px 12px; position:relative; }
+    .op-btn .op-title { font-weight:600; font-size:12px; }
+    .op-btn .op-desc { font-size:10px; color:var(--muted); line-height:1.3; }
+    .op-btn .risk { position:absolute; top:6px; right:8px; font-size:9px; padding:1px 6px; border-radius:4px; text-transform:uppercase; }
+    .risk-low { background:rgba(32,201,151,.15); color:#7bf6cd; }
+    .risk-medium { background:rgba(245,159,0,.15); color:#ffca75; }
+    .risk-high { background:rgba(255,107,107,.2); color:#ff9a9a; }
+    .risk-critical { background:rgba(180,40,60,.35); color:#ffb3b3; border:1px solid #8a3040; }
+    .op-btn.critical-op { border-color:#6a2838; background:#1a1520; }
+    .op-btn.critical-op:hover { background:#2a1828; }
+    .ops-note { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.45; }
+    .risk-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px; margin-left:6px; }
+    .fleet-map-wrap { display:grid; grid-template-columns:1.2fr 1fr; gap:12px; margin-bottom:12px; min-height:340px; }
+    #fleetMap { height:340px; border-radius:10px; border:1px solid #294466; background:#060d18; }
+    .map-legend { font-size:11px; color:var(--muted); margin-top:6px; }
+    .telemetry-banner { font-size:12px; padding:8px 10px; border-radius:8px; margin-bottom:10px; border:1px solid #3a5578; background:#0c1628; }
+    .telemetry-banner.warn { border-color:#7a5a20; color:#ffca75; }
+    .telemetry-banner.ok { border-color:#20664a; color:#7bf6cd; }
+    @media(max-width:960px){ main{grid-template-columns:1fr;} nav{flex-direction:row; overflow:auto;} .grid{grid-template-columns:repeat(2,1fr);} .ops-layout{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <div id="loginOverlay" class="overlay">
+    <div class="card">
+      <h2>Shamal Platform</h2>
+      <p class="small">Sign in with your assigned role (viewer, operator, or admin).</p>
+      <label>Username</label>
+      <input id="loginUser" placeholder="admin / operator / viewer" autocomplete="username" style="width:100%" />
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" style="width:100%" />
+      <div class="row" style="margin-top:14px">
+        <button id="loginBtn" style="flex:1">Sign In</button>
+      </div>
+      <p id="loginError" class="danger-text" style="min-height:18px"></p>
+      <p class="small" style="margin-top:12px">Use the admin (and optional operator/viewer) credentials configured in the server <code>.env</code> file.</p>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="confirmTitle">Confirm operation</h3>
+      <p id="confirmBody"></p>
+      <div id="confirmStep1">
+        <p class="danger-text">This may send a real command to the aircraft via FlightHub when the device is connected.</p>
+        <div class="row">
+          <button id="confirmCancel">Cancel</button>
+          <button id="confirmNext">Continue to final confirmation</button>
+        </div>
+      </div>
+      <div id="confirmStep2" style="display:none">
+        <label>Type <strong>CONFIRM</strong> to authorize</label>
+        <input id="confirmText" placeholder="CONFIRM" style="width:100%" />
+        <label style="display:flex;gap:8px;align-items:center;margin-top:10px">
+          <input type="checkbox" id="confirmCheck" />
+          I understand this operation may affect the live aircraft.
+        </label>
+        <div class="row" style="margin-top:12px">
+          <button id="confirmBack">Back</button>
+          <button id="confirmExecute" style="background:#5a2030;border-color:#8a3040">Execute operation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div>
+      <div class="brand">Shamal Platform</div>
+      <div class="small">Fleet monitoring, live camera, operations, alerts, missions</div>
+    </div>
+    <div class="auth">
+      <span id="liveBadge" class="pill bad" style="display:none">● Offline</span>
+      <span id="userBadge" class="pill role-viewer">Not signed in</span>
+      <button id="logoutBtn" style="display:none">Logout</button>
+      <button id="refreshAll">Refresh</button>
+    </div>
+  </header>
+  <main id="appMain" style="opacity:.35;pointer-events:none">
+    <nav>
+      <button data-tab="fleet">1) Live Map + Fleet</button>
+      <button data-tab="camera">2) Live Camera Panel</button>
+      <button data-tab="ops">3) Operations Panel</button>
+      <button data-tab="alerts">4) Alerts & Events</button>
+      <button data-tab="history">5) Mission & Media History</button>
+    </nav>
+    <div>
+      <section id="fleet" class="active">
+        <h3>Live Map + Fleet</h3>
+        <div class="grid">
+          <div class="kpi"><div class="small">Total devices</div><div class="v" id="kTotal">-</div></div>
+          <div class="kpi"><div class="small">Drones</div><div class="v" id="kDrones">-</div></div>
+          <div class="kpi"><div class="small">Docks</div><div class="v" id="kDocks">-</div></div>
+          <div class="kpi"><div class="small">Online / Offline</div><div class="v" id="kStatus">-</div></div>
+        </div>
+        <div id="fleetTelemetryBanner" class="telemetry-banner warn" style="display:none"></div>
+        <div class="fleet-map-wrap">
+          <div>
+            <div id="fleetMap"></div>
+            <div class="map-legend">Green = drone · Blue = dock · Dashed = cached GPS · Pins refresh every 10s from FlightHub</div>
+          </div>
+          <div>
+            <div class="statusline" id="fleetStatus">Loading...</div>
+            <table id="fleetTable"><thead><tr><th>Serial</th><th>Role</th><th>Model</th><th>Online</th><th>Location</th><th>Battery</th><th>Alt</th><th>GPS</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="camera">
+        <h3>Live Camera Panel</h3>
+        <p class="statusline">Select the <strong>drone</strong> for aerial FPV. Use dock only for the indoor dock camera. If OpenAPI returns 403, paste a FH2 Livestream Sharing link from FlightHub → Share.</p>
+        <div class="row">
+          <select id="camDevice"></select>
+          <select id="camSource" title="Camera source">
+            <option value="drone">Drone camera (FPV)</option>
+            <option value="dock">Dock camera</option>
+          </select>
+          <button id="loadStream">Start / Refresh Stream</button>
+          <button id="snapshotBtn">Telemetry Snapshot</button>
+        </div>
+        <div class="row">
+          <input id="fh2ShareUrl" placeholder="FH2 Livestream Sharing URL (fallback when API 403)" style="flex:1;min-width:240px" />
+          <a id="openFh2Share" href="#" target="_blank" rel="noopener" style="display:none;font-size:12px">Open share link</a>
+          <a id="openFh2Cockpit" href="#" target="_blank" rel="noopener" style="display:none;font-size:12px">Open FlightHub cockpit</a>
+        </div>
+        <div class="player-wrap" id="playerWrap">
+          <div class="player-placeholder" id="playerPlaceholder">Select a device and load stream to start the player.</div>
+          <video id="livePlayer" controls playsinline style="display:none"></video>
+          <iframe id="webrtcFrame" title="WebRTC player" allow="autoplay; fullscreen"></iframe>
+        </div>
+        <div class="url-list" id="streamUrls"></div>
+        <div class="pre" id="streamInfo">Stream metadata will appear here.</div>
+      </section>
+
+      <section id="ops">
+        <h3>Operations Panel</h3>
+        <p class="statusline" id="opsRoleNote">Operator or admin role required for flight commands.</p>
+        <div class="ops-layout">
+          <aside>
+            <div class="ops-card">
+              <h4>Target asset</h4>
+              <select id="opsDevice" style="width:100%"></select>
+              <input id="missionId" placeholder="Mission / task UUID (required for start)" style="width:100%;margin-top:8px;box-sizing:border-box" />
+              <div class="readiness">
+                <span class="readiness-dot" id="opsReadyDot"></span>
+                <span id="opsReadyText" class="small">Select device to check readiness</span>
+              </div>
+              <p class="statusline" id="opsMetaNote" style="margin:6px 0"></p>
+              <button id="opsRefreshReady" style="width:100%">Refresh readiness</button>
+            </div>
+            <div class="ops-card" style="margin-top:10px">
+              <h4>Live telemetry</h4>
+              <div class="ops-hud">
+                <div class="m"><div class="lbl">Battery</div><div class="val" id="opsHudBattery">—</div></div>
+                <div class="m"><div class="lbl">Altitude</div><div class="val" id="opsHudAlt">—</div></div>
+                <div class="m"><div class="lbl">Speed</div><div class="val" id="opsHudSpeed">—</div></div>
+                <div class="m"><div class="lbl">GPS sats</div><div class="val" id="opsHudGps">—</div></div>
+                <div class="m"><div class="lbl">Mode</div><div class="val" id="opsHudMode">—</div></div>
+                <div class="m"><div class="lbl">RTK</div><div class="val" id="opsHudRtk">—</div></div>
+              </div>
+            </div>
+            <p class="ops-note">Aligned with DJI FlightHub 2 remote control, dock, mission, and camera APIs. Commands are gated by connectivity and role; double confirmation required.</p>
+          </aside>
+          <div>
+            <div class="ops-tabs" id="opsCategoryTabs"></div>
+            <div class="ops-grid" id="opsActionGrid"></div>
+            <div class="pre" id="opsResult" style="margin-top:12px">No operation yet.</div>
+          </div>
+        </div>
+        <h4 style="margin-top:16px">Operation Log</h4>
+        <table id="opsTable"><thead><tr><th>ID</th><th>Action</th><th>Risk</th><th>Status</th><th>Reason</th><th>Time</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="alerts">
+        <h3>Alerts & Events</h3>
+        <div class="row"><button id="refreshEvents">Refresh Events</button></div>
+        <table id="eventsTable"><thead><tr><th>Type</th><th>Source</th><th>Payload</th><th>Time</th><th>Ack</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="history">
+        <h3>Mission & Media History</h3>
+        <div class="row"><button id="loadTasks">Load Tasks</button><select id="taskSelect"></select><button id="loadMedia">Load Media</button><button id="loadTrack">Load Trajectory</button></div>
+        <div class="pre" id="taskInfo">Task list not loaded.</div>
+        <div class="pre" id="mediaInfo">Media not loaded.</div>
+        <div class="pre" id="trackInfo">Trajectory not loaded.</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const state = {
+      devices: [],
+      tasks: [],
+      session: null,
+      pendingOp: null,
+      hls: null,
+      opsCatalog: null,
+      opsCategory: "flight",
+      liveTimer: null,
+      activeTab: "fleet",
+      isRefreshing: false,
+      streamLoaded: false,
+      fleetMap: null,
+      fleetMarkers: {},
+      whepPc: null,
+    };
+    const LIVE_INTERVAL_MS = 10_000;
+    const $ = (id) => document.getElementById(id);
+
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem("shamalCcSession");
+        if (raw) state.session = JSON.parse(raw);
+      } catch { state.session = null; }
+    }
+
+    function saveSession(session) {
+      state.session = session;
+      localStorage.setItem("shamalCcSession", JSON.stringify(session));
+    }
+
+    function clearSession() {
+      state.session = null;
+      localStorage.removeItem("shamalCcSession");
+    }
+
+    function canOperate() {
+      return state.session && (state.session.role === "operator" || state.session.role === "admin");
+    }
+
+    function updateRoleUi() {
+      const s = state.session;
+      const badge = $("userBadge");
+      const main = $("appMain");
+      const overlay = $("loginOverlay");
+      if (!s) {
+        badge.textContent = "Not signed in";
+        badge.className = "pill role-viewer";
+        $("logoutBtn").style.display = "none";
+        $("liveBadge").style.display = "none";
+        overlay.classList.remove("hidden");
+        main.style.opacity = ".35";
+        main.style.pointerEvents = "none";
+        return;
+      }
+      badge.textContent = `${s.displayName} (${s.role})`;
+      badge.className = `pill role-${s.role}`;
+      $("logoutBtn").style.display = "inline-block";
+      overlay.classList.add("hidden");
+      main.style.opacity = "1";
+      main.style.pointerEvents = "auto";
+
+      document.querySelectorAll("#opsActionGrid .op-btn").forEach((btn) => {
+        btn.disabled = !canOperate();
+      });
+      $("opsRoleNote").textContent = canOperate()
+        ? "You may run operations (double confirmation required)."
+        : "Viewer role: read-only. Operations are disabled.";
+    }
+
+    document.querySelectorAll("nav button").forEach((btn) => btn.onclick = () => {
+      document.querySelectorAll("section").forEach((s) => s.classList.remove("active"));
+      $(btn.dataset.tab).classList.add("active");
+      state.activeTab = btn.dataset.tab;
+      if (btn.dataset.tab === "fleet" && state.fleetMap) {
+        setTimeout(() => state.fleetMap.invalidateSize(), 120);
+      }
+      if (btn.dataset.tab === "camera" && $("camDevice").value && state.session) {
+        $("loadStream").click();
+      }
+    });
+
+    function updateLiveBadge(active, lastAt) {
+      const badge = $("liveBadge");
+      badge.style.display = state.session ? "inline-block" : "none";
+      if (!state.session) return;
+      if (active) {
+        badge.className = "pill ok";
+        badge.textContent = lastAt
+          ? `● Live · ${lastAt.toLocaleTimeString()}`
+          : "● Live";
+      } else {
+        badge.className = "pill warn";
+        badge.textContent = "● Paused";
+      }
+    }
+
+    function startLiveUpdates() {
+      stopLiveUpdates();
+      updateLiveBadge(true);
+      state.liveTimer = setInterval(() => {
+        if (document.hidden || !state.session) return;
+        liveTick().catch((e) => console.warn("live tick", e));
+      }, LIVE_INTERVAL_MS);
+    }
+
+    function stopLiveUpdates() {
+      if (state.liveTimer) {
+        clearInterval(state.liveTimer);
+        state.liveTimer = null;
+      }
+      updateLiveBadge(false);
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!state.session) return;
+      if (document.hidden) {
+        updateLiveBadge(false);
+      } else {
+        updateLiveBadge(true);
+        liveTick().catch((e) => console.warn("live resume", e));
+      }
+    });
+
+    async function liveTick() {
+      if (state.isRefreshing || !state.session) return;
+      state.isRefreshing = true;
+      try {
+        const tab = state.activeTab;
+        if (tab === "fleet" || tab === "camera") {
+          await loadFleet({ silent: true });
+        }
+        if (tab === "ops") {
+          await Promise.all([loadOpsReadiness(), loadOpsLog()]);
+        }
+        await loadEvents();
+        if (tab === "camera" && state.streamLoaded && $("camDevice").value) {
+          await refreshCameraTelemetry();
+        }
+        updateLiveBadge(true, new Date());
+      } finally {
+        state.isRefreshing = false;
+      }
+    }
+
+    async function refreshCameraTelemetry() {
+      const sn = $("camDevice").value;
+      if (!sn) return;
+      try {
+        const telem = await api(`/v1/marafiq/devices/${sn}/telemetry/latest`);
+        const existing = $("streamInfo").textContent;
+        const prefix = existing.includes("Snapshot") ? "" : existing + "\n\n";
+        $("streamInfo").textContent =
+          prefix + `Telemetry @ ${new Date().toLocaleTimeString()}\n` + JSON.stringify(telem.data, null, 2);
+      } catch (e) {
+        console.warn("camera telemetry", e);
+      }
+    }
+
+    async function api(path, opts = {}) {
+      if (!state.session?.apiKey) throw new Error("Not signed in");
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Api-Key": state.session.apiKey,
+        "X-CC-Session": state.session.sessionToken,
+        ...(opts.headers || {}),
+      };
+      const res = await fetch(path, { ...opts, headers });
+      if (res.status === 401) {
+        clearSession();
+        updateRoleUi();
+        throw new Error("Session expired — sign in again");
+      }
+      if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+      return res.json();
+    }
+
+    $("loginBtn").onclick = async () => {
+      $("loginError").textContent = "";
+      try {
+        const res = await fetch("/v1/marafiq/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: $("loginUser").value.trim(),
+            password: $("loginPass").value,
+          }),
+        });
+        const body = await res.json();
+        if (!res.ok) {
+          $("loginError").textContent = body.message || body.error || "Login failed";
+          return;
+        }
+        saveSession({
+          apiKey: body.data.apiKey,
+          role: body.data.role,
+          displayName: body.data.displayName,
+          sessionToken: body.data.sessionToken,
+        });
+        updateRoleUi();
+        startLiveUpdates();
+        await refreshDashboard();
+      } catch (e) {
+        $("loginError").textContent = e.message;
+      }
+    };
+
+    $("logoutBtn").onclick = () => {
+      stopLiveUpdates();
+      clearSession();
+      destroyPlayer();
+      state.streamLoaded = false;
+      updateRoleUi();
+    };
+
+    function destroyPlayer() {
+      if (state.hls) {
+        state.hls.destroy();
+        state.hls = null;
+      }
+      if (state.whepPc) {
+        state.whepPc.close();
+        state.whepPc = null;
+      }
+      const video = $("livePlayer");
+      video.pause();
+      video.srcObject = null;
+      video.removeAttribute("src");
+      video.style.display = "none";
+      $("webrtcFrame").style.display = "none";
+      $("playerPlaceholder").style.display = "block";
+    }
+
+    async function playWhep(url) {
+      const video = $("livePlayer");
+      const pc = new RTCPeerConnection();
+      state.whepPc = pc;
+      pc.addTransceiver("video", { direction: "recvonly" });
+      pc.addTransceiver("audio", { direction: "recvonly" });
+      pc.ontrack = (ev) => {
+        video.srcObject = ev.streams[0];
+        video.play().catch(() => {});
+      };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/sdp" },
+        body: offer.sdp,
+      });
+      if (!res.ok) throw new Error(`WHEP ${res.status}`);
+      const answer = await res.text();
+      await pc.setRemoteDescription({ type: "answer", sdp: answer });
+      video.style.display = "block";
+    }
+
+    function mountPlayer(playback) {
+      destroyPlayer();
+      const video = $("livePlayer");
+      const iframe = $("webrtcFrame");
+      const placeholder = $("playerPlaceholder");
+      const urls = $("streamUrls");
+
+      let html = "";
+      if (playback.hlsUrl) html += `<div>HLS: <code>${playback.hlsUrl}</code></div>`;
+      if (playback.rtmpUrl) html += `<div>RTMP: <code>${playback.rtmpUrl}</code> (use VLC or RTMP client)</div>`;
+      if (playback.webrtcUrl) html += `<div>WHEP/WebRTC: <code>${playback.webrtcUrl}</code></div>`;
+      if (playback.url && !playback.hlsUrl && !playback.rtmpUrl && !playback.webrtcUrl) {
+        html += `<div>Primary: <code>${playback.url}</code></div>`;
+      }
+      urls.innerHTML = html || `<div>${playback.viewerNote}</div>`;
+
+      if (!playback.url || playback.type === "none") {
+        placeholder.textContent = playback.viewerNote;
+        placeholder.style.display = "block";
+        return;
+      }
+
+      placeholder.style.display = "none";
+
+      const isShareUrl =
+        playback.url.includes("fh.dji.com") ||
+        playback.url.includes("dji.com/share") ||
+        playback.viewerNote?.includes("Livestream Sharing");
+
+      if (isShareUrl && playback.url.startsWith("http")) {
+        iframe.src = playback.url;
+        iframe.style.display = "block";
+        const openShare = $("openFh2Share");
+        openShare.href = playback.url;
+        openShare.style.display = "inline-block";
+        return;
+      }
+
+      if (playback.type === "hls" && playback.url) {
+        video.style.display = "block";
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = playback.url;
+        } else if (window.Hls && Hls.isSupported()) {
+          state.hls = new Hls();
+          state.hls.loadSource(playback.url);
+          state.hls.attachMedia(video);
+        } else {
+          placeholder.textContent = "HLS.js not available in this browser.";
+          placeholder.style.display = "block";
+        }
+        return;
+      }
+
+      if (playback.type === "webrtc" && playback.url?.includes("whep")) {
+        playWhep(playback.url).catch((e) => {
+          placeholder.textContent = `WHEP player failed: ${e.message}. Open stream URL in FH2 cockpit or enable livestream API permission.`;
+          placeholder.style.display = "block";
+        });
+        return;
+      }
+
+      if ((playback.type === "http" || playback.type === "webrtc") && playback.url?.startsWith("http")) {
+        if (playback.type === "webrtc" || playback.url.includes("webrtc") || playback.url.includes("whep")) {
+          iframe.src = playback.url;
+          iframe.style.display = "block";
+          return;
+        }
+        video.style.display = "block";
+        video.src = playback.url;
+        return;
+      }
+
+      if (playback.type === "rtmp") {
+        placeholder.innerHTML = `RTMP stream active. Browsers cannot play RTMP natively.<br>Copy: <code>${playback.rtmpUrl || playback.url}</code>`;
+        placeholder.style.display = "block";
+        return;
+      }
+
+      placeholder.textContent = playback.viewerNote;
+      placeholder.style.display = "block";
+    }
+
+    function ensureFleetMap() {
+      if (state.fleetMap || !window.L) return;
+      state.fleetMap = L.map("fleetMap", { zoomControl: true });
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: "Esri",
+        maxZoom: 19,
+      }).addTo(state.fleetMap);
+      state.fleetMap.setView([22.3, 39.1], 6);
+    }
+
+    function updateFleetMap(positions) {
+      ensureFleetMap();
+      if (!state.fleetMap) return;
+      const bounds = [];
+      for (const p of positions) {
+        if (p.latitude == null || p.longitude == null) continue;
+        bounds.push([p.latitude, p.longitude]);
+        const isDrone = p.role === "drone";
+        const color = isDrone ? "#20c997" : "#4ea2ff";
+        const stale = p.freshness !== "live";
+        const label = `${p.callsign || p.serialNumber} (${p.role})`;
+        const popup = `<strong>${label}</strong><br>Online: ${p.online}<br>Battery: ${p.batteryPercent ?? "—"}%<br>Alt: ${p.altitudeM ?? "—"} m<br>GPS: ${p.freshness}${stale ? " (cached)" : ""}`;
+        let marker = state.fleetMarkers[p.serialNumber];
+        if (!marker) {
+          marker = L.circleMarker([p.latitude, p.longitude], {
+            radius: isDrone ? 9 : 7,
+            color,
+            fillColor: color,
+            fillOpacity: stale ? 0.45 : 0.85,
+            weight: stale ? 2 : 3,
+            dashArray: stale ? "4 4" : null,
+          }).addTo(state.fleetMap);
+          marker.bindPopup(popup);
+          state.fleetMarkers[p.serialNumber] = marker;
+        } else {
+          marker.setLatLng([p.latitude, p.longitude]);
+          marker.setStyle({ dashArray: stale ? "4 4" : null, fillOpacity: stale ? 0.45 : 0.85 });
+          marker.setPopupContent(popup);
+        }
+      }
+      if (bounds.length === 1) state.fleetMap.setView(bounds[0], 17);
+      else if (bounds.length > 1) state.fleetMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+    }
+
+    function updateTelemetryBanner(positions) {
+      const banner = $("fleetTelemetryBanner");
+      const liveCount = positions.filter((p) => p.freshness === "live").length;
+      const cachedCount = positions.filter((p) => p.freshness === "cached").length;
+      if (liveCount > 0) {
+        banner.style.display = "block";
+        banner.className = "telemetry-banner ok";
+        banner.textContent = `Live GPS telemetry from FlightHub for ${liveCount} device(s).`;
+        return;
+      }
+      if (cachedCount > 0) {
+        banner.style.display = "block";
+        banner.className = "telemetry-banner warn";
+        banner.textContent =
+          "FlightHub device-state API returned 403 — showing last cached GPS. Enable Device Management on the Organization Key in FlightHub Sync for live coordinates.";
+        return;
+      }
+      banner.style.display = "block";
+      banner.className = "telemetry-banner warn";
+      banner.textContent =
+        "No GPS coordinates yet. Device shows online but FlightHub OpenAPI denied device state (403). Enable Device Management + Livestream permissions on your Organization Key.";
+    }
+
+    function fillDeviceSelectors() {
+      const drone = state.devices.find((d) => d.role === "drone");
+      const defaultSn = drone?.serialNumber ?? state.devices[0]?.serialNumber;
+
+      for (const id of ["camDevice", "opsDevice"]) {
+        const sel = $(id);
+        const prev = sel.value;
+        sel.innerHTML = "";
+        state.devices.forEach((d) => {
+          const o = document.createElement("option");
+          o.value = d.serialNumber;
+          o.textContent = `${d.serialNumber} (${d.role})`;
+          sel.appendChild(o);
+        });
+        const pick = prev && [...sel.options].some((o) => o.value === prev) ? prev : defaultSn;
+        if (pick) sel.value = pick;
+      }
+    }
+
+    async function loadFleet(opts = {}) {
+      const [sum, devices, positionsRes] = await Promise.all([
+        api("/v1/marafiq/fleet/summary"),
+        api("/v1/marafiq/devices"),
+        api("/v1/marafiq/fleet/positions"),
+      ]);
+      state.devices = devices.data || [];
+      const positions = positionsRes.data || [];
+      fillDeviceSelectors();
+      $("kTotal").textContent = sum.data.totalDevices;
+      $("kDrones").textContent = sum.data.drones;
+      $("kDocks").textContent = sum.data.docks;
+      $("kStatus").textContent = `${sum.data.online}/${sum.data.offline}`;
+      const now = new Date();
+      $("fleetStatus").textContent = opts.silent
+        ? `Source: ${sum.meta.source} • auto-updated ${now.toLocaleTimeString()}`
+        : `Source: ${sum.meta.source} • refreshed ${now.toLocaleTimeString()}`;
+
+      updateTelemetryBanner(positions);
+      updateFleetMap(positions);
+
+      const posBySn = Object.fromEntries(positions.map((p) => [p.serialNumber, p]));
+      const tbody = document.querySelector("#fleetTable tbody");
+      tbody.innerHTML = "";
+      state.devices.forEach((d) => {
+        const p = posBySn[d.serialNumber] || {};
+        const lat = p.latitude;
+        const lng = p.longitude;
+        const loc =
+          lat != null && lng != null
+            ? `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}${p.freshness === "cached" ? " *" : ""}`
+            : "—";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.serialNumber}</td>
+          <td>${d.role}</td>
+          <td>${d.modelName || "-"}</td>
+          <td><span class="pill ${d.online ? "ok" : "bad"}">${String(d.online)}</span></td>
+          <td>${loc}</td>
+          <td>${p.batteryPercent ?? "-"}</td>
+          <td>${p.altitudeM ?? "-"}</td>
+          <td><span class="pill ${p.freshness === "live" ? "ok" : p.freshness === "cached" ? "warn" : "bad"}">${p.freshness || "—"}</span></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    $("loadStream").onclick = async () => {
+      const sn = $("camDevice").value;
+      if (!sn) return alert("Select a device first");
+      const shareUrl = $("fh2ShareUrl").value.trim();
+      if (shareUrl) localStorage.setItem("shamalFh2ShareUrl", shareUrl);
+      const params = new URLSearchParams();
+      params.set("camera", $("camSource").value);
+      if (shareUrl) params.set("share_url", shareUrl);
+      const streamPath = `/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${params}`;
+      const telemSn =
+        state.devices.find((d) => d.serialNumber === sn)?.role === "gateway"
+          ? state.devices.find((d) => d.role === "drone")?.serialNumber || sn
+          : sn;
+      try {
+        const [stream, telem] = await Promise.all([
+          api(streamPath),
+          api(`/v1/marafiq/devices/${encodeURIComponent(telemSn)}/telemetry/latest`),
+        ]);
+        const data = stream.data;
+        state.streamLoaded = true;
+        mountPlayer(data.playback || { type: "none", viewerNote: data.note || data.playback?.viewerNote });
+        const dev = state.devices.find((d) => d.serialNumber === sn);
+        const hint =
+          dev?.role === "gateway" && $("camSource").value === "drone"
+            ? `\nNote: streaming drone FPV for gateway selection (telemetry from paired drone).`
+            : "";
+        $("streamInfo").textContent =
+          (data.note || "") +
+          hint +
+          "\n\n" +
+          JSON.stringify({ stream: data, telemetry: telem.data, telemetryMeta: telem.meta }, null, 2);
+      } catch (e) {
+        $("streamInfo").textContent = "Stream error: " + e.message;
+      }
+    };
+
+    $("snapshotBtn").onclick = async () => {
+      const sn = $("camDevice").value;
+      const telem = await api(`/v1/marafiq/devices/${sn}/telemetry/latest`);
+      $("streamInfo").textContent =
+        `Snapshot at ${new Date().toISOString()}\n` + JSON.stringify(telem.data, null, 2);
+    };
+
+    function openConfirmModal(opDef) {
+      state.pendingOp = opDef;
+      const risk = opDef.risk || "medium";
+      $("confirmTitle").innerHTML = `Authorize: ${opDef.label}<span class="risk-badge risk-${risk}">${risk}</span>`;
+      $("confirmBody").textContent =
+        `Device: ${$("opsDevice").value}\nAction: ${opDef.label}\nCategory: ${opDef.category}\nFH2: ${opDef.fh2Capability || "—"}\n\n${opDef.description || ""}`;
+      if (risk === "critical") {
+        $("confirmBody").textContent += "\n\n⚠ CRITICAL: This action may immediately affect aircraft or mission safety.";
+      }
+      $("confirmText").value = "";
+      $("confirmCheck").checked = false;
+      $("confirmStep1").style.display = "block";
+      $("confirmStep2").style.display = "none";
+      $("confirmModal").classList.add("open");
+    }
+
+    function closeConfirmModal() {
+      $("confirmModal").classList.remove("open");
+      state.pendingOp = null;
+    }
+
+    $("confirmCancel").onclick = closeConfirmModal;
+    $("confirmBack").onclick = () => {
+      $("confirmStep2").style.display = "none";
+      $("confirmStep1").style.display = "block";
+    };
+    $("confirmNext").onclick = () => {
+      $("confirmStep1").style.display = "none";
+      $("confirmStep2").style.display = "block";
+    };
+
+    $("confirmExecute").onclick = async () => {
+      if (!$("confirmCheck").checked) {
+        alert("Check the authorization box to continue.");
+        return;
+      }
+      if ($("confirmText").value.trim() !== "CONFIRM") {
+        alert('Type CONFIRM exactly to authorize this operation.');
+        return;
+      }
+      const pending = state.pendingOp;
+      if (!pending) return;
+      closeConfirmModal();
+      try {
+        const body = {
+          deviceSn: $("opsDevice").value,
+          safetyConfirm: true,
+          missionId: $("missionId").value || undefined,
+          note: `CC double-confirm by ${state.session.displayName}`,
+        };
+        const res = await api(`/v1/marafiq/ops/${pending.path}`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        $("opsResult").textContent = JSON.stringify(res.data, null, 2);
+        await loadOpsLog();
+        await loadEvents();
+        await loadOpsReadiness();
+      } catch (e) {
+        $("opsResult").textContent = "Error: " + e.message;
+      }
+    };
+
+    async function loadOpsCatalog() {
+      const res = await api("/v1/marafiq/ops/catalog");
+      state.opsCatalog = res.data;
+      renderOpsCategoryTabs();
+      renderOpsActions();
+    }
+
+    function renderOpsCategoryTabs() {
+      const tabs = $("opsCategoryTabs");
+      tabs.innerHTML = "";
+      if (!state.opsCatalog?.categories) return;
+      for (const cat of state.opsCatalog.categories) {
+        const b = document.createElement("button");
+        b.textContent = cat.label;
+        b.title = cat.hint;
+        if (cat.id === state.opsCategory) b.classList.add("active");
+        b.onclick = () => {
+          state.opsCategory = cat.id;
+          renderOpsCategoryTabs();
+          renderOpsActions();
+        };
+        tabs.appendChild(b);
+      }
+    }
+
+    function renderOpsActions() {
+      const grid = $("opsActionGrid");
+      grid.innerHTML = "";
+      if (!state.opsCatalog?.operations) return;
+      const ops = state.opsCatalog.operations.filter((o) => o.category === state.opsCategory);
+      for (const op of ops) {
+        const btn = document.createElement("button");
+        btn.className = `op-btn${op.risk === "critical" ? " critical-op" : ""}`;
+        btn.disabled = !canOperate();
+        btn.innerHTML = `<span class="risk risk-${op.risk}">${op.risk}</span><span class="op-title">${op.label}</span><span class="op-desc">${op.description}</span>`;
+        btn.onclick = () => {
+          if (!canOperate()) {
+            alert("Your role is viewer (read-only). Sign in as operator or admin.");
+            return;
+          }
+          if (op.requiresMissionId && !$("missionId").value.trim()) {
+            alert("Enter a mission / task UUID in the sidebar before starting a mission.");
+            return;
+          }
+          openConfirmModal(op);
+        };
+        grid.appendChild(btn);
+      }
+    }
+
+    function updateOpsHud(data, meta) {
+      const t = data?.telemetry;
+      $("opsHudBattery").textContent = t?.batteryPercent != null ? `${t.batteryPercent}%` : "—";
+      $("opsHudAlt").textContent = t?.altitudeM != null ? `${t.altitudeM} m` : "—";
+      $("opsHudSpeed").textContent = t?.horizontalSpeedMs != null ? `${t.horizontalSpeedMs} m/s` : "—";
+      $("opsHudGps").textContent = t?.gpsSatellites != null ? String(t.gpsSatellites) : "—";
+      $("opsHudMode").textContent = data?.modeCode ?? "—";
+      $("opsHudRtk").textContent = t?.rtkFixed === true ? "Fixed" : t?.rtkFixed === false ? "No" : "—";
+      const metaEl = $("opsMetaNote");
+      if (meta?.note) {
+        metaEl.textContent = meta.note;
+        metaEl.style.display = "block";
+      } else {
+        metaEl.textContent = "";
+        metaEl.style.display = "none";
+      }
+      if (meta?.freshness === "cached") {
+        metaEl.textContent = (metaEl.textContent ? metaEl.textContent + " " : "") + "(Telemetry cached — enable Device Management on org key for live GPS.)";
+        metaEl.style.display = "block";
+      }
+      const dot = $("opsReadyDot");
+      dot.className = "readiness-dot";
+      if (data?.online === false) {
+        dot.classList.add("offline");
+        $("opsReadyText").textContent = "Offline in FlightHub";
+      } else if (data?.commandReady) {
+        dot.classList.add("ready");
+        $("opsReadyText").textContent = `Command ready • ${data.role || "device"} • mode ${data.modeCode}`;
+      } else {
+        $("opsReadyText").textContent = `Not command-ready • mode ${data?.modeCode ?? "unknown"}`;
+      }
+    }
+
+    async function loadOpsReadiness() {
+      const sn = $("opsDevice").value;
+      if (!sn || !state.session) return;
+      try {
+        const res = await api(`/v1/marafiq/ops/readiness/${encodeURIComponent(sn)}`);
+        updateOpsHud(res.data, res.meta);
+      } catch (e) {
+        $("opsReadyText").textContent = "Readiness check failed: " + e.message;
+      }
+    }
+
+    $("opsDevice").onchange = loadOpsReadiness;
+    $("opsRefreshReady").onclick = loadOpsReadiness;
+
+    async function loadOpsLog() {
+      const res = await api("/v1/marafiq/ops/log?limit=20");
+      const tbody = document.querySelector("#opsTable tbody");
+      tbody.innerHTML = "";
+      for (const r of res.data) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.id.slice(0, 8)}...</td><td>${r.action}</td><td><span class="risk risk-${r.risk || "medium"}">${r.risk || "—"}</span></td><td><span class="pill ${r.status === "blocked" ? "warn" : "ok"}">${r.status}</span></td><td>${(r.reason || "-").slice(0, 80)}</td><td>${new Date(r.createdAt).toLocaleTimeString()}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function loadEvents() {
+      const res = await api("/v1/marafiq/events?limit=25");
+      renderEventsTable(res.data || []);
+    }
+
+    function renderEventsTable(events) {
+      const tbody = document.querySelector("#eventsTable tbody");
+      tbody.innerHTML = "";
+      for (const e of events) {
+        const ackCell = e.acknowledged
+          ? "Yes"
+          : canOperate()
+            ? `<button data-ack="${e.id}">Ack</button>`
+            : "—";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${e.type}</td><td>${e.source}</td><td><small>${JSON.stringify(e.payload).slice(0, 120)}</small></td><td>${new Date(e.receivedAt).toLocaleString()}</td><td>${ackCell}</td>`;
+        tbody.appendChild(tr);
+      }
+      document.querySelectorAll("[data-ack]").forEach((b) => {
+        b.onclick = async () => {
+          if (!confirm("Acknowledge this event?")) return;
+          await api(`/v1/marafiq/events/${b.dataset.ack}/ack`, { method: "POST" });
+          await loadEvents();
+        };
+      });
+    }
+    $("refreshEvents").onclick = loadEvents;
+
+    async function loadTasks() {
+      const res = await api("/v1/marafiq/tasks");
+      state.tasks = res.data || [];
+      $("taskInfo").textContent = JSON.stringify(res, null, 2);
+      const sel = $("taskSelect");
+      sel.innerHTML = "";
+      for (const t of state.tasks) {
+        const o = document.createElement("option");
+        o.value = t.id;
+        o.textContent = `${t.id} • ${t.name || t.status || "task"}`;
+        sel.appendChild(o);
+      }
+    }
+    $("loadTasks").onclick = loadTasks;
+
+    $("loadMedia").onclick = async () => {
+      const id = $("taskSelect").value;
+      if (!id) return alert("Load tasks first");
+      const res = await api(`/v1/marafiq/tasks/${id}/media`);
+      $("mediaInfo").textContent = JSON.stringify(res, null, 2);
+    };
+    $("loadTrack").onclick = async () => {
+      const id = $("taskSelect").value;
+      if (!id) return alert("Load tasks first");
+      const headers = {
+        "X-Api-Key": state.session.apiKey,
+        "X-CC-Session": state.session.sessionToken,
+      };
+      const [geo, kml] = await Promise.all([
+        fetch(`/v1/marafiq/tasks/${id}/trajectory.geojson`, { headers }).then((r) => r.text()),
+        fetch(`/v1/marafiq/tasks/${id}/trajectory.kml`, { headers }).then((r) => r.text()),
+      ]);
+      $("trackInfo").textContent = `GeoJSON:\n${geo.slice(0, 1200)}\n\nKML:\n${kml.slice(0, 1200)}`;
+    };
+
+    async function loadFh2Links() {
+      try {
+        const res = await api("/v1/marafiq/capabilities");
+        const url = res.data?.fh2CockpitUrl;
+        if (url) {
+          $("openFh2Cockpit").href = url;
+          $("openFh2Cockpit").style.display = "inline-block";
+        }
+      } catch (_) {}
+    }
+
+    async function refreshDashboard() {
+      await loadFleet();
+      if (state.session) {
+        try {
+          await Promise.all([loadOpsCatalog(), loadFh2Links()]);
+        } catch (e) {
+          console.warn("ops catalog", e);
+        }
+      }
+      await loadOpsLog();
+      await loadEvents();
+      if (state.activeTab === "ops") {
+        await loadOpsReadiness();
+      }
+      updateLiveBadge(true, new Date());
+    }
+
+    $("refreshAll").onclick = async () => {
+      try {
+        await refreshDashboard();
+      } catch (e) {
+        alert("Refresh failed: " + e.message);
+      }
+    };
+
+    loadSession();
+    const savedShare = localStorage.getItem("shamalFh2ShareUrl");
+    if (savedShare) $("fh2ShareUrl").value = savedShare;
+    updateRoleUi();
+    if (state.session) {
+      startLiveUpdates();
+      refreshDashboard().catch((e) => alert(e.message));
+    }
+  </script>
+</body>
+</html>

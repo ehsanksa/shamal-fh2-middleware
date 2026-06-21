@@ -1,0 +1,35 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      {
+        "name": "Facility Perimeter Inspection",
+        "uuid": "0bbc74b4-5e5a-4390-9256-8e4ee08a241b",
+        "task_type": "immediate",
+        "status": "success",
+        "sn": "7CTDM3D00BZNVZ",
+        "begin_at": "2024-10-29T08:51:47Z",
+        "end_at": "2024-10-29T08:53:58Z",
+        "run_at": "2024-10-29T08:51:50Z",
+        "completed_at": "2024-10-29T08:53:55Z",
+        "wayline_uuid": "6eb90ac7-4ec8-4a2c-a470-746e7444e77c",
+        "media_upload_status": "upload_finished",
+        "current_waypoint_index": 12,
+        "total_waypoints": 12
+      },
+      {
+        "name": "Pump Station Thermal Scan",
+        "uuid": "89328e80-04ee-4089-9482-6bb00ec6bede",
+        "task_type": "timed",
+        "status": "executing",
+        "sn": "7CTDM3D00BZNVZ",
+        "begin_at": "2026-05-18T10:00:00Z",
+        "end_at": "2026-05-18T11:00:00Z",
+        "media_upload_status": "uploading",
+        "current_waypoint_index": 4,
+        "total_waypoints": 18
+      }
+    ]
+  }
+}

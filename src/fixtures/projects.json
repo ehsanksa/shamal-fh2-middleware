@@ -1,0 +1,16 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      {
+        "name": "Marafiq Pilot Project",
+        "introduction": "Shamal demo integration",
+        "uuid": "93df839d-ae74-4f04-842e-2f1f81c89a66",
+        "org_uuid": "105ddd05-34ce-46b6-a872-cb32b8c98f64",
+        "created_at": 1702498686,
+        "updated_at": 1702498686
+      }
+    ]
+  }
+}

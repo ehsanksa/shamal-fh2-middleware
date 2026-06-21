@@ -1,0 +1,17 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      {
+        "uuid": "a1b2c3d4-e5f6-7890-abcd-model000001",
+        "name": "Facility Orthomosaic Demo",
+        "status": "success",
+        "model_type": "2d_ortho",
+        "created_at": "2026-05-20T10:00:00Z",
+        "updated_at": "2026-05-20T12:30:00Z",
+        "download_url": "https://example.dji.com/demo/ortho.zip"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "name": "Facility Perimeter Inspection",
+    "uuid": "0bbc74b4-5e5a-4390-9256-8e4ee08a241b",
+    "task_type": "immediate",
+    "status": "success",
+    "sn": "7CTDM3D00BZNVZ",
+    "wayline_uuid": "6eb90ac7-4ec8-4a2c-a470-746e7444e77c",
+    "begin_at": "2024-10-29T08:51:47Z",
+    "end_at": "2024-10-29T08:53:58Z",
+    "folder_info": {
+      "folder_id": 12345,
+      "expected_file_count": 48,
+      "uploaded_file_count": 48
+    }
+  }
+}

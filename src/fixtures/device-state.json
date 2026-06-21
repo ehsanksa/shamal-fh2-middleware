@@ -1,0 +1,44 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "device_sn": "1581F6QAD23B00TEST01",
+    "device_model": {
+      "key": "0-67-0",
+      "domain": "0",
+      "type": "67",
+      "sub_type": "0",
+      "name": "Mavic 3 Enterprise"
+    },
+    "device_state": {
+      "latitude": 24.7136,
+      "longitude": 46.6753,
+      "height": 120.5,
+      "elevation": 612,
+      "horizontal_speed": 8.2,
+      "vertical_speed": 0.1,
+      "attitude_head": 145,
+      "mode_code": 5,
+      "battery": {
+        "capacity_percent": 78,
+        "landing_power": 15,
+        "return_home_power": 25
+      },
+      "position_state": {
+        "gps_number": 18,
+        "is_fixed": 2,
+        "rtk_number": 24
+      },
+      "live_capacity": {
+        "available_video_number": 1,
+        "coexist_video_number_max": 1,
+        "device_list": [
+          {
+            "sn": "1581F6QAD23B00TEST01",
+            "camera_list": [{ "camera_index": "39-0-7", "video_list": [{ "video_type": "normal" }] }]
+          }
+        ]
+      }
+    }
+  }
+}

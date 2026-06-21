@@ -1,0 +1,23 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      {
+        "device_sn": "1581F6QAD23B00TEST01",
+        "device_hms": {
+          "list": [
+            {
+              "level": "notification",
+              "module": "device_management",
+              "code": "0x16100083",
+              "message": "Battery temperature slightly elevated",
+              "in_the_key": "on_the_ground",
+              "imminent": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

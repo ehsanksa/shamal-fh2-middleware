@@ -1,0 +1,30 @@
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "uuid": "d47f920a-4116-4c24-90c6-cabaecbf4212",
+        "name": "DJI_20241029165242_0001_T",
+        "file_type": "image",
+        "suffix": ".jpeg",
+        "size": 1163264,
+        "preview_url": "https://example.invalid/preview/demo-001.jpeg",
+        "original_url": "https://example.invalid/original/demo-001.jpeg",
+        "create_at": "2024-10-29T08:52:42Z",
+        "update_at": "2024-10-29T08:52:55Z"
+      },
+      {
+        "uuid": "a12b920a-4116-4c24-90c6-cabaecbf9999",
+        "name": "DJI_20241029165310_0002_V",
+        "file_type": "video",
+        "suffix": ".mp4",
+        "size": 24576000,
+        "preview_url": "https://example.invalid/preview/demo-002.mp4",
+        "original_url": "https://example.invalid/original/demo-002.mp4",
+        "create_at": "2024-10-29T08:53:10Z",
+        "update_at": "2024-10-29T08:53:20Z"
+      }
+    ]
+  }
+}

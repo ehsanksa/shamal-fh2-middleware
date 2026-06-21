@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: Shamal Middleware API for Marafiq
+  version: 2.0.0
+  description: |
+    Read-only REST layer over Shamal’s DJI FlightHub 2 operations.
+    Shamal owns and operates the drone fleet; Marafiq CAFM displays these records.
+    Marafiq integrators call Shamal — never DJI credentials directly.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+paths:
+  /health:
+    get:
+      summary: Service health
+      security: []
+      responses:
+        "200":
+          description: OK
+  /v1/marafiq/devices:
+    get:
+      summary: List Shamal fleet devices from FlightHub 2 (normalized)
+      tags: [Devices]
+      responses:
+        "200":
+          description: Device list
+  /v1/marafiq/devices/{sn}:
+    get:
+      summary: Device detail with health and state summary
+      description: "Use a serialNumber copied from GET /v1/marafiq/devices. Example: 1581F8HGX254W00A0CHR"
+      tags: [Devices]
+      parameters:
+        - name: sn
+          in: path
+          description: "Shamal device serialNumber from GET /v1/marafiq/devices. Do not enter email or username."
+          required: true
+          schema: { type: string, example: "1581F8HGX254W00A0CHR" }
+      responses:
+        "200":
+          description: Device detail
+        "404":
+          description: Not found
+  /v1/marafiq/devices/{sn}/telemetry/latest:
+    get:
+      summary: Latest telemetry snapshot (REST poll)
+      description: "Use a drone serialNumber copied from GET /v1/marafiq/devices."
+      tags: [Devices]
+      parameters:
+        - name: sn
+          in: path
+          description: "Shamal drone serialNumber from GET /v1/marafiq/devices. Example: 1581F8HGX254W00A0CHR"
+          required: true
+          schema: { type: string, example: "1581F8HGX254W00A0CHR" }
+      responses:
+        "200":
+          description: Telemetry snapshot
+  /v1/marafiq/tasks:
+    get:
+      summary: List flight tasks
+      description: "Returns Shamal FlightHub 2 inspection/flight tasks. Copy data[].id from this response and use it in the task detail, media, and trajectory endpoints."
+      tags: [Tasks]
+      parameters:
+        - name: sn
+          in: query
+          description: "Optional Shamal device serialNumber from GET /v1/marafiq/devices. Leave empty to use the first project device."
+          schema: { type: string, example: "8UUXN6300A09XS" }
+        - name: begin_at
+          in: query
+          description: "Optional Unix timestamp start time. Leave empty for last 30 days."
+          schema: { type: integer }
+        - name: end_at
+          in: query
+          description: "Optional Unix timestamp end time. Leave empty for now."
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Task list
+  /v1/marafiq/tasks/{id}:
+    get:
+      summary: Flight task detail
+      description: "Use a task id copied from GET /v1/marafiq/tasks → data[].id. Do not enter email or username."
+      tags: [Tasks]
+      parameters:
+        - name: id
+          in: path
+          description: "FlightHub task UUID from GET /v1/marafiq/tasks → data[].id."
+          required: true
+          schema: { type: string, format: uuid, example: "PASTE-TASK-UUID-FROM-TASKS-LIST" }
+      responses:
+        "200":
+          description: Task detail
+  /v1/marafiq/tasks/{id}/trajectory:
+    get:
+      summary: Flight trajectory polyline
+      description: "Use a task id copied from GET /v1/marafiq/tasks → data[].id."
+      tags: [Tasks]
+      parameters:
+        - name: id
+          in: path
+          description: "FlightHub task UUID from GET /v1/marafiq/tasks → data[].id."
+          required: true
+          schema: { type: string, format: uuid, example: "PASTE-TASK-UUID-FROM-TASKS-LIST" }
+      responses:
+        "200":
+          description: Trajectory
+  /v1/marafiq/tasks/{id}/media:
+    get:
+      summary: Inspection media for task
+      description: "Use a task id copied from GET /v1/marafiq/tasks → data[].id. This field is not an email address."
+      tags: [Tasks]
+      parameters:
+        - name: id
+          in: path
+          description: "FlightHub task UUID from GET /v1/marafiq/tasks → data[].id."
+          required: true
+          schema: { type: string, format: uuid, example: "PASTE-TASK-UUID-FROM-TASKS-LIST" }
+      responses:
+        "200":
+          description: Media list
+  /v1/marafiq/capabilities:
+    get:
+      summary: API capabilities (phase 1 + 2)
+      tags: [Meta]
+  /v1/marafiq/fleet/summary:
+    get:
+      summary: Fleet summary for CAFM dashboards
+      tags: [Fleet]
+  /v1/marafiq/docks:
+    get:
+      summary: List Shamal docks
+      tags: [Docks]
+  /v1/marafiq/docks/{sn}:
+    get:
+      summary: Dock detail
+      tags: [Docks]
+  /v1/marafiq/devices/{sn}/live-stream:
+    get:
+      summary: Live stream capacity (RTMP/WebRTC info)
+      tags: [Streams]
+  /v1/marafiq/devices/{sn}/telemetry/stream:
+    get:
+      summary: Telemetry SSE stream
+      tags: [Telemetry]
+  /v1/marafiq/mapping/models:
+    get:
+      summary: Cloud mapping / reconstruction models
+      tags: [Mapping]
+  /v1/marafiq/mapping/models/{id}:
+    get:
+      summary: Mapping model detail
+      tags: [Mapping]
+  /v1/marafiq/tasks/{id}/trajectory.geojson:
+    get:
+      summary: Flight path GeoJSON
+      tags: [GIS]
+  /v1/marafiq/tasks/{id}/trajectory.kml:
+    get:
+      summary: Flight path KML
+      tags: [GIS]
+  /v1/marafiq/events:
+    get:
+      summary: Webhook event feed
+      tags: [Events]
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Events
+  /webhooks/fh2:
+    post:
+      summary: FlightHub 2 webhook receiver (internal)
+      security: []
+      responses:
+        "202":
+          description: Accepted

@@ -1,0 +1,20 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "name": "Facility Perimeter Inspection",
+    "status": "success",
+    "wayline_uuid": "6eb90ac7-4ec8-4a2c-a470-746e7444e77c",
+    "track": {
+      "track_id": "track-demo-001",
+      "drone_sn": "1581F6QAD23B00TEST01",
+      "flight_distance": 2840,
+      "flight_duration": 128,
+      "points": [
+        { "timestamp": 1730194310, "latitude": 24.712, "longitude": 46.674, "height": 80 },
+        { "timestamp": 1730194320, "latitude": 24.713, "longitude": 46.675, "height": 100 },
+        { "timestamp": 1730194335, "latitude": 24.714, "longitude": 46.676, "height": 120 }
+      ]
+    }
+  }
+}

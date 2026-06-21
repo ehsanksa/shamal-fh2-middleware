@@ -1,0 +1,21 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      {
+        "gateway": {
+          "sn": "7CTDM3D00BZNVZ",
+          "callsign": "Dock-Alpha",
+          "device_model": { "name": "DJI Dock 2" }
+        },
+        "drone": {
+          "sn": "1581F6QAD23B00TEST01",
+          "callsign": "Mavic-Inspect-01",
+          "device_model": { "name": "Mavic 3 Enterprise", "key": "0-67-0" },
+          "camera_list": []
+        }
+      }
+    ]
+  }
+}
