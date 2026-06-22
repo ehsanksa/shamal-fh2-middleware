@@ -11,6 +11,12 @@ if (envFile.parsed) {
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(8080),
+  HTTPS_REQUIRED: z
+    .union([z.boolean(), z.string()])
+    .transform((v) => String(v).toLowerCase() === "true")
+    .default(false),
+  HTTPS_KEY_PATH: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  HTTPS_CERT_PATH: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   LOG_LEVEL: z.string().default("info"),
   FH2_MODE: z.enum(["mock", "live"]).default("mock"),
@@ -67,6 +73,18 @@ const envSchema = z.object({
     (v) => (v === "" ? undefined : v),
     z.string().optional(),
   ),
+  CC_VIEWER_DISPLAY_NAME: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().optional(),
+  ),
+  CC_OPERATOR_DISPLAY_NAME: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().optional(),
+  ),
+  CC_ADMIN_DISPLAY_NAME: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().optional(),
+  ),
   FH2_LIVE_SHARE_URL: z.preprocess(
     (v) => (v === "" ? undefined : v),
     z.string().url().optional(),
@@ -101,6 +119,9 @@ export const config = {
   ccOperatorPassword: parsed.data.CC_OPERATOR_PASSWORD?.trim(),
   ccViewerId: parsed.data.CC_VIEWER_ID?.trim(),
   ccViewerPassword: parsed.data.CC_VIEWER_PASSWORD?.trim(),
+  ccViewerDisplayName: parsed.data.CC_VIEWER_DISPLAY_NAME?.trim(),
+  ccOperatorDisplayName: parsed.data.CC_OPERATOR_DISPLAY_NAME?.trim(),
+  ccAdminDisplayName: parsed.data.CC_ADMIN_DISPLAY_NAME?.trim(),
 };
 
 /** Re-read .env so login picks up credential changes without restarting the server. */
@@ -123,6 +144,9 @@ export function readCcCredentialEnv() {
     ccOperatorPassword: process.env.CC_OPERATOR_PASSWORD?.trim(),
     ccViewerId: process.env.CC_VIEWER_ID?.trim(),
     ccViewerPassword: process.env.CC_VIEWER_PASSWORD?.trim(),
+    ccViewerDisplayName: process.env.CC_VIEWER_DISPLAY_NAME?.trim(),
+    ccOperatorDisplayName: process.env.CC_OPERATOR_DISPLAY_NAME?.trim(),
+    ccAdminDisplayName: process.env.CC_ADMIN_DISPLAY_NAME?.trim(),
     marafiqApiKeys: (process.env.MARAFIQ_API_KEYS ?? "")
       .split(",")
       .map((k) => k.trim())

@@ -21,6 +21,7 @@ import { mappingRoutes } from "./routes/mapping.js";
 import { operationRoutes } from "./routes/operations.js";
 import { streamRoutes } from "./routes/streams.js";
 import { taskRoutes } from "./routes/tasks.js";
+import { mediaRoutes } from "./routes/media.js";
 import { telemetrySseRoutes } from "./routes/telemetry-sse.js";
 import { webhookRoutes } from "./routes/webhooks.js";
 
@@ -30,18 +31,38 @@ const openapiPath = join(
 );
 
 export async function buildServer() {
+  const httpsOptions =
+    config.HTTPS_REQUIRED && config.HTTPS_KEY_PATH && config.HTTPS_CERT_PATH
+      ? {
+          key: readFileSync(config.HTTPS_KEY_PATH),
+          cert: readFileSync(config.HTTPS_CERT_PATH),
+        }
+      : undefined;
+
+  if (config.HTTPS_REQUIRED && !httpsOptions) {
+    throw new Error(
+      "HTTPS_REQUIRED=true but HTTPS_KEY_PATH/HTTPS_CERT_PATH are missing in environment.",
+    );
+  }
+
   const app = Fastify({
+    ...(httpsOptions ? ({ https: httpsOptions } as Record<string, unknown>) : {}),
     logger: { level: config.LOG_LEVEL },
     requestIdHeader: "x-request-id",
     genReqId: (req) =>
       (req.headers["x-request-id"] as string | undefined) ?? crypto.randomUUID(),
-  });
+  }) as Awaited<ReturnType<typeof Fastify>>;
 
   // Swagger "Try it out" from 127.0.0.1 → localhost (or vice versa) needs CORS in dev.
   await app.register(cors, {
     origin:
       config.NODE_ENV === "development"
-        ? [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/]
+        ? [
+            /^http:\/\/localhost:\d+$/,
+            /^http:\/\/127\.0\.0\.1:\d+$/,
+            /^https:\/\/localhost:\d+$/,
+            /^https:\/\/127\.0\.0\.1:\d+$/,
+          ]
         : false,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: [
@@ -62,10 +83,12 @@ export async function buildServer() {
     openapi: {
       openapi: "3.1.0",
       info: {
-        title: "Shamal Middleware API for Marafiq",
-        version: "1.0.0",
+        title: "Shamal Middleware API",
+        version: "2.0.0",
         description:
-          "Read-only integration layer between Shamal DJI FlightHub 2 operations and Marafiq CAFM. Phase 1: fleet, tasks, media. Phase 2: docks, GIS, live stream info, mapping, SSE telemetry.",
+          "REST layer between Shamal DJI FlightHub 2 operations and client platforms (CAFM, dashboards, integrations). " +
+          "Shamal Platform UI: GET /. Live spec JSON: GET /openapi.json. " +
+          "Client integrators use X-Api-Key only — never DJI credentials.",
       },
       // Use same-origin by default so Swagger "Try it out" works regardless of
       // opening docs via localhost or 127.0.0.1.
@@ -87,7 +110,7 @@ export async function buildServer() {
     uiConfig: { docExpansion: "list" },
   });
 
-  app.get("/openapi.yaml", async (_req, reply) => {
+  app.get("/openapi.yaml", async (_req: unknown, reply: { type: (t: string) => { send: (b: string) => void } }) => {
     reply.type("application/yaml").send(openapiSpec);
   });
 
@@ -106,8 +129,11 @@ export async function buildServer() {
   await app.register(gisRoutes);
   await app.register(telemetrySseRoutes);
   await app.register(taskRoutes);
+  await app.register(mediaRoutes);
   await app.register(eventRoutes);
   await app.register(webhookRoutes);
+
+  app.get("/openapi.json", async () => app.swagger());
 
   return app;
 }

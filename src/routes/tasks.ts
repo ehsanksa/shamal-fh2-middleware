@@ -176,7 +176,21 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
-      const media = await fh2.getTaskMedia(request.params.id);
+      let media;
+      try {
+        media = await fh2.getTaskMedia(request.params.id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes("219021")) {
+          return reply.status(502).send({
+            error: "fh2_media_unavailable",
+            message:
+              "FlightHub could not return media for this task (error 219021). Enable Task Management on the Organization Key in FlightHub Sync, then regenerate the key.",
+            fh2Code: 219021,
+          });
+        }
+        throw err;
+      }
       return reply.send({
         data: normalizeMedia(media),
         meta: { count: media.length, source: "flighthub2" },

@@ -44,6 +44,8 @@ export interface NormalizedTask {
   startedAt: string | null;
   completedAt: string | null;
   mediaUploadStatus: string | null;
+  folderId: number | null;
+  folderLabel: string | null;
   waypointProgress: { current: number | null; total: number | null };
 }
 
@@ -144,8 +146,21 @@ export function normalizeHms(items: Fh2HmsItem[]): NormalizedHmsAlert[] {
   }));
 }
 
-export function normalizeTask(task: Fh2Task): NormalizedTask {
-  return {
+export function formatTaskFolderLabel(
+  task: Pick<NormalizedTask, "name" | "completedAt" | "scheduledBeginAt">,
+  dockLabel = "DJI Dock 3",
+): string {
+  const iso = task.completedAt || task.scheduledBeginAt;
+  if (!iso) return task.name;
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return task.name;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())} ${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}`;
+  return `${dockLabel}-FLY-TO-${stamp} (UTC)`;
+}
+
+export function normalizeTask(task: Fh2Task, dockLabel?: string): NormalizedTask {
+  const base = {
     id: task.uuid,
     name: task.name,
     status: task.status,
@@ -157,10 +172,15 @@ export function normalizeTask(task: Fh2Task): NormalizedTask {
     startedAt: task.run_at ?? null,
     completedAt: task.completed_at ?? null,
     mediaUploadStatus: task.media_upload_status ?? null,
+    folderId: task.folder_id ?? null,
     waypointProgress: {
       current: task.current_waypoint_index ?? null,
       total: task.total_waypoints ?? null,
     },
+  };
+  return {
+    ...base,
+    folderLabel: formatTaskFolderLabel(base, dockLabel),
   };
 }
 

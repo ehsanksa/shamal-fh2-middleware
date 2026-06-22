@@ -8,6 +8,7 @@ export interface CcUser {
   password: string;
   role: CcRole;
   apiKey: string;
+  displayName: string;
 }
 
 const ROLE_RANK: Record<CcRole, number> = {
@@ -24,7 +25,7 @@ function parseUsers(raw: string): CcUser[] {
     .map((part) => part.trim())
     .filter(Boolean)
     .map((part) => {
-      const [username, password, role, apiKey] = part.split(":");
+      const [username, password, role, apiKey, displayName] = part.split(":");
       if (!username || !password || !role || !apiKey) {
         throw new Error(`Invalid CC_USERS entry: ${part}`);
       }
@@ -37,6 +38,7 @@ function parseUsers(raw: string): CcUser[] {
         password,
         role: normalizedRole,
         apiKey,
+        displayName: displayName?.trim() || username,
       };
     });
 }
@@ -62,6 +64,9 @@ interface CcCredentialEnv {
   ccOperatorPassword?: string;
   ccViewerId?: string;
   ccViewerPassword?: string;
+  ccViewerDisplayName?: string;
+  ccOperatorDisplayName?: string;
+  ccAdminDisplayName?: string;
   marafiqApiKeys: string[];
 }
 
@@ -73,6 +78,9 @@ function buildCcUsersFromEnv(creds: CcCredentialEnv = {
   ccOperatorPassword: config.ccOperatorPassword,
   ccViewerId: config.ccViewerId,
   ccViewerPassword: config.ccViewerPassword,
+  ccViewerDisplayName: config.ccViewerDisplayName,
+  ccOperatorDisplayName: config.ccOperatorDisplayName,
+  ccAdminDisplayName: config.ccAdminDisplayName,
   marafiqApiKeys: config.marafiqApiKeys,
 }): CcUser[] {
   const apiKey = creds.marafiqApiKeys[0] ?? "demo-marafiq-key";
@@ -84,6 +92,7 @@ function buildCcUsersFromEnv(creds: CcCredentialEnv = {
       password: creds.ccAdminPassword,
       role: "admin",
       apiKey,
+      displayName: creds.ccAdminDisplayName || creds.ccAdminId,
     });
   }
 
@@ -93,6 +102,7 @@ function buildCcUsersFromEnv(creds: CcCredentialEnv = {
       password: creds.ccOperatorPassword,
       role: "operator",
       apiKey,
+      displayName: creds.ccOperatorDisplayName || creds.ccOperatorId,
     });
   }
 
@@ -102,6 +112,7 @@ function buildCcUsersFromEnv(creds: CcCredentialEnv = {
       password: creds.ccViewerPassword,
       role: "viewer",
       apiKey,
+      displayName: creds.ccViewerDisplayName || creds.ccViewerId,
     });
   }
 
@@ -113,18 +124,21 @@ function buildCcUsersFromEnv(creds: CcCredentialEnv = {
       password: "admin2026",
       role: "admin",
       apiKey,
+      displayName: "Admin",
     },
     {
       username: "operator",
       password: "ops2026",
       role: "operator",
       apiKey,
+      displayName: "Operator",
     },
     {
       username: "viewer",
       password: "view2026",
       role: "viewer",
       apiKey,
+      displayName: "Viewer",
     },
   ];
 }
@@ -203,7 +217,7 @@ export function login(username: string, password: string): {
   return {
     apiKey: user.apiKey,
     role: user.role,
-    displayName: user.username,
+    displayName: user.displayName,
     sessionToken: createSessionToken(user),
   };
 }

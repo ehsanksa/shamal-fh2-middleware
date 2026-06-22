@@ -9,6 +9,7 @@ import {
   hasMinRole,
   resolveRequestRole,
 } from "../services/commandCenterAuth.js";
+import { assertRoleAccess } from "../services/apiAccess.js";
 
 function clientIp(request: FastifyRequest): string {
   const forwarded = request.headers["x-forwarded-for"];
@@ -23,9 +24,9 @@ function requestPath(url: string): string {
 }
 
 function requiresOperatorRole(path: string, method: string): boolean {
-  if (method !== "POST") return false;
-  if (path.startsWith("/v1/marafiq/ops/")) return true;
-  return /^\/v1\/marafiq\/events\/[^/]+\/ack$/.test(path);
+  if (method === "POST" && path.startsWith("/v1/marafiq/ops/")) return true;
+  if (method === "POST" && /^\/v1\/marafiq\/events\/[^/]+\/ack$/.test(path)) return true;
+  return false;
 }
 
 /** Register on the root Fastify instance (not as an encapsulated plugin). */
@@ -84,6 +85,15 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
     }
 
     request.ccRole = role;
+
+    const access = assertRoleAccess(role, request.method, path);
+    if (!access.allowed) {
+      return reply.status(403).send({
+        error: "forbidden",
+        message: access.message,
+        requiredRole: access.requiredRole,
+      });
+    }
 
     if (requiresOperatorRole(path, request.method)) {
       if (!hasMinRole(role, "operator")) {

@@ -23,12 +23,14 @@ async function main() {
   }
   const app = await buildServer();
   await app.listen({ port: config.PORT, host: "0.0.0.0" });
+  const scheme = config.HTTPS_REQUIRED ? "https" : "http";
   app.log.info(
     {
       port: config.PORT,
       fh2Mode: config.FH2_MODE,
       fh2LiveReady: config.fh2LiveReady,
-      docs: `http://localhost:${config.PORT}/docs`,
+      httpsRequired: config.HTTPS_REQUIRED,
+      docs: `${scheme}://localhost:${config.PORT}/docs`,
     },
     "Shamal FH2 middleware started",
   );

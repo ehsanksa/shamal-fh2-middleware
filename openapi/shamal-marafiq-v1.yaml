@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
-  title: Shamal Middleware API for Marafiq
+  title: Shamal Middleware API
   version: 2.0.0
   description: |
-    Read-only REST layer over Shamal’s DJI FlightHub 2 operations.
-    Shamal owns and operates the drone fleet; Marafiq CAFM displays these records.
-    Marafiq integrators call Shamal — never DJI credentials directly.
+    REST layer over Shamal’s DJI FlightHub 2 operations.
+    Shamal owns and operates the drone fleet; client platforms display these records.
+    Integrators call Shamal — never DJI credentials directly.
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -133,6 +133,10 @@ paths:
     get:
       summary: Fleet summary for CAFM dashboards
       tags: [Fleet]
+  /v1/marafiq/fleet/positions:
+    get:
+      summary: Live fleet positions (GPS, battery, altitude)
+      tags: [Fleet]
   /v1/marafiq/docks:
     get:
       summary: List Shamal docks
@@ -143,8 +147,24 @@ paths:
       tags: [Docks]
   /v1/marafiq/devices/{sn}/live-stream:
     get:
-      summary: Live stream capacity (RTMP/WebRTC info)
+      summary: Live video stream info (Volc/WHEP/RTMP)
+      description: Returns FlightHub live stream credentials. Use camera=dock or camera=drone for dual-view panels.
       tags: [Streams]
+      parameters:
+        - name: sn
+          in: path
+          required: true
+          schema: { type: string, example: "8UUXN6300A09XS" }
+        - name: camera
+          in: query
+          schema: { type: string, enum: [drone, dock, auto], default: auto }
+        - name: share_url
+          in: query
+          description: Optional FH2 Livestream Sharing URL fallback
+          schema: { type: string }
+      responses:
+        "200":
+          description: Stream playback metadata (type volc, webrtc, hls, etc.)
   /v1/marafiq/devices/{sn}/telemetry/stream:
     get:
       summary: Telemetry SSE stream
@@ -179,6 +199,26 @@ paths:
       responses:
         "200":
           description: Events
+  /v1/marafiq/events/{id}/ack:
+    post:
+      summary: Acknowledge an event
+      tags: [Events]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Acknowledged
+  /v1/marafiq/auth/login:
+    post:
+      summary: Shamal Platform login (returns API key + session)
+      tags: [Auth]
+      security: []
+      responses:
+        "200":
+          description: Session token and role
   /webhooks/fh2:
     post:
       summary: FlightHub 2 webhook receiver (internal)

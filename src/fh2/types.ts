@@ -45,6 +45,7 @@ export interface Fh2Task {
   media_upload_status?: string;
   current_waypoint_index?: number;
   total_waypoints?: number;
+  folder_id?: number;
 }
 
 export interface Fh2MediaItem {

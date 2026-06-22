@@ -13,7 +13,7 @@ export const streamRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         summary: "Live video stream info (RTMP/WebRTC capacity)",
         description:
-          "Returns FlightHub live_capacity for the device. Marafiq uses this to know if live video is available before embedding a player.",
+          "Returns FlightHub live_capacity for the device. Clients use this to know if live video is available before embedding a player.",
         tags: ["Streams"],
         params: {
           type: "object",

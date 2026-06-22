@@ -43,7 +43,8 @@
     .statusline { font-size:12px; color:var(--muted);}
     .camera-toolbar { flex-shrink:0; }
     .player-wrap { background:#060d18; border:1px solid #294466; border-radius:10px; overflow:hidden; margin:8px 0; flex:1; min-height:200px; position:relative; display:flex; align-items:center; justify-content:center; }
-    #dockPlayer, #dronePlayer { width:100%; height:100%; max-height:none; background:#000; display:block; object-fit:contain; }
+    #dockPlayer, #dronePlayer, .volc-host { width:100%; height:100%; max-height:none; background:#000; display:block; object-fit:contain; }
+    .volc-host { position:relative; min-height:120px; }
     #webrtcFrame { width:100%; height:100%; min-height:200px; border:0; display:none; }
     .player-placeholder { padding:24px; text-align:center; color:var(--muted); position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
     .url-list { font-size:12px; color:var(--muted); margin-top:4px; flex-shrink:0; }
@@ -100,7 +101,61 @@
     .camera-panel-head { padding:8px 10px; font-size:12px; font-weight:600; color:#9fd0ff; border-bottom:1px solid #294466; flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:8px; }
     .camera-panel .player-wrap { margin:0; border:0; border-radius:0; flex:1; min-height:160px; }
     .camera-panel .stream-statusline { padding:6px 10px; font-size:11px; flex-shrink:0; }
-    @media(max-width:960px){ main{grid-template-columns:1fr;} nav{flex-direction:row; overflow:auto;} .grid{grid-template-columns:repeat(2,1fr);} .ops-layout{grid-template-columns:1fr;} }
+    .dash-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px; flex:1; align-content:start; }
+    .dash-card { background:#0c1628; border:1px solid #294466; border-radius:10px; cursor:pointer; transition:border-color .15s,box-shadow .15s; min-height:130px; display:flex; flex-direction:column; overflow:hidden; }
+    .dash-card:hover { border-color:#4ea2ff; box-shadow:0 0 0 1px rgba(78,162,255,.25); }
+    .dash-card-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid #294466; flex-shrink:0; }
+    .dash-card-title { font-size:12px; font-weight:600; color:#9fd0ff; }
+    .dash-card-body { padding:8px 10px; font-size:12px; flex:1; overflow:auto; min-height:0; }
+    .get-api-btn { font-size:10px; padding:4px 8px; border-radius:6px; background:#152a46; flex-shrink:0; white-space:nowrap; }
+    .get-api-btn:hover { background:#1e3a5c; }
+    #dashFleetMap { height:150px; border-radius:8px; border:1px solid #22354f; background:#060d18; position:relative; z-index:0; overflow:hidden; }
+    #dashboard .leaflet-container { z-index:0 !important; }
+    #dashboard .leaflet-pane,
+    #dashboard .leaflet-top,
+    #dashboard .leaflet-bottom { z-index:1 !important; }
+    .dash-camera-split { display:grid; grid-template-columns:1fr 1fr; gap:8px; min-height:120px; }
+    .dash-cam-panel .player-wrap { min-height:100px; margin:0; border:0; border-radius:0; }
+    .dash-cam-panel .camera-panel-head { font-size:11px; padding:6px 8px; }
+    .card-zoom-backdrop { position:fixed; inset:0; background:rgba(5,10,20,.78); z-index:2000; display:none; align-items:center; justify-content:center; padding:16px; }
+    body.zoom-open #dashboard .leaflet-container { visibility:hidden; }
+    .card-zoom { background:var(--card); border:1px solid #3a5578; border-radius:14px; width:min(1100px,96vw); max-height:92vh; display:flex; flex-direction:column; overflow:hidden; z-index:2001; }
+    .card-zoom .camera-split { min-height:min(420px,55vh); }
+    .card-zoom .player-wrap { min-height:200px; }
+    #zoomFleetMap { height:min(380px,45vh); border-radius:8px; border:1px solid #22354f; background:#060d18; }
+    .fleet-zoom-table { width:100%; margin-top:10px; font-size:12px; }
+    .dash-kpis { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin-bottom:8px; }
+    .dash-kpi { background:#0a1322; border:1px solid #22354f; border-radius:8px; padding:6px 8px; }
+    .dash-kpi .v { font-size:18px; font-weight:700; }
+    .dash-metric { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #1e2f48; }
+    .dash-metric:last-child { border-bottom:0; }
+    .dash-compact-table { font-size:11px; }
+    .dash-compact-table td,.dash-compact-table th { padding:4px 6px; }
+    .dash-mission-block { margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #1e2f48; }
+    .dash-mission-block:last-child { border-bottom:0; margin-bottom:0; padding-bottom:0; }
+    .dash-mission-head { display:flex; justify-content:space-between; gap:8px; align-items:baseline; margin-bottom:4px; }
+    .dash-mission-head strong { font-size:11px; color:#cfe4ff; font-weight:600; line-height:1.35; }
+    .dash-media-list { list-style:none; margin:4px 0 0; padding:0; }
+    .dash-media-list li { font-size:11px; padding:2px 0; color:#d8e6f8; display:flex; gap:6px; align-items:center; }
+    .dash-media-list .pill { font-size:9px; padding:1px 6px; }
+    .dash-media-note { font-size:10px; color:var(--muted); margin:4px 0 0; line-height:1.4; }
+    .card-zoom-backdrop.open { display:flex; }
+    .card-zoom-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #294466; flex-shrink:0; }
+    .card-zoom-head h3 { margin:0; font-size:16px; }
+    .card-zoom-actions { display:flex; gap:8px; align-items:center; }
+    .card-zoom-close { font-size:20px; line-height:1; padding:4px 10px; }
+    .card-zoom-body { padding:12px 14px; overflow:auto; flex:1; min-height:0; }
+    .card-zoom-body #zoomFleetMap { height:min(420px,50vh); }
+    .api-toast { position:fixed; bottom:20px; right:20px; background:#1a3d2e; border:1px solid #20c997; color:#7bf6cd; padding:10px 14px; border-radius:8px; font-size:12px; z-index:2100; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .api-toast.show { opacity:1; }
+    .viewer-note { font-size:11px; color:var(--muted); margin:0 0 8px; }
+    main.viewer-no-nav { grid-template-columns: 1fr; }
+    main.viewer-no-nav nav { display: none; }
+      .dash-grid { grid-template-columns:repeat(4,1fr); }
+      .dash-card[data-card="fleet"] { grid-column:span 2; }
+      .dash-card[data-card="camera"] { grid-column:span 2; }
+    }
+    @media(max-width:960px){ main{grid-template-columns:1fr;} nav{flex-direction:row; overflow:auto;} .grid{grid-template-columns:repeat(2,1fr);} .ops-layout{grid-template-columns:1fr;} .dash-grid{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -149,7 +204,7 @@
   <header>
     <div>
       <div class="brand">Shamal Platform</div>
-      <div class="small">Fleet monitoring, live camera, operations, alerts, missions</div>
+      <div class="small" id="headerSub">Fleet monitoring, live camera, operations, alerts, missions</div>
     </div>
     <div class="auth">
       <span id="liveBadge" class="pill bad" style="display:none">● Offline</span>
@@ -159,14 +214,113 @@
     </div>
   </header>
   <main id="appMain" style="opacity:.35;pointer-events:none">
-    <nav>
-      <button data-tab="fleet">1) Live Map + Fleet</button>
-      <button data-tab="camera">2) Live Camera Panel</button>
-      <button data-tab="ops">3) Operations Panel</button>
-      <button data-tab="alerts">4) Alerts & Events</button>
-      <button data-tab="history">5) Mission & Media History</button>
+    <nav id="sideNav">
+      <button data-tab="dashboard" data-nav-viewer style="display:none">Monitoring Dashboard</button>
+      <button data-tab="fleet" data-nav-staff>1) Live Map + Fleet</button>
+      <button data-tab="camera" data-nav-staff>2) Live Camera Panel</button>
+      <button data-tab="ops" data-nav-staff>3) Operations Panel</button>
+      <button data-tab="alerts" data-nav-staff>4) Alerts &amp; Events</button>
+      <button data-tab="history" data-nav-staff>5) Mission &amp; Media History</button>
     </nav>
     <div>
+      <section id="dashboard">
+        <h3>Monitoring Dashboard</h3>
+        <p class="viewer-note">Map, telemetry, live camera, alerts, and mission activity — unified in one view.</p>
+        <div class="dash-grid" id="dashGrid">
+          <div class="dash-card" data-card="fleet" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Fleet Overview</span>
+              <button type="button" class="get-api-btn" data-api-card="fleet">Get API</button>
+            </div>
+            <div class="dash-card-body">
+              <div class="dash-kpis">
+                <div class="dash-kpi"><div class="small">Devices</div><div class="v" id="dashKTotal">-</div></div>
+                <div class="dash-kpi"><div class="small">Online</div><div class="v" id="dashKOnline">-</div></div>
+              </div>
+              <div id="dashFleetMap"></div>
+            </div>
+          </div>
+          <div class="dash-card" data-card="drone-telemetry" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Drone Telemetry</span>
+              <button type="button" class="get-api-btn" data-api-card="drone-telemetry">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashDroneTelem">Loading…</div>
+          </div>
+          <div class="dash-card" data-card="dock-telemetry" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Dock Telemetry</span>
+              <button type="button" class="get-api-btn" data-api-card="dock-telemetry">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashDockTelem">Loading…</div>
+          </div>
+          <div class="dash-card" data-card="battery" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Battery Status</span>
+              <button type="button" class="get-api-btn" data-api-card="battery">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashBattery">Loading…</div>
+          </div>
+          <div class="dash-card" data-card="gps" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">GPS / Location</span>
+              <button type="button" class="get-api-btn" data-api-card="gps">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashGps">Loading…</div>
+          </div>
+          <div class="dash-card" data-card="online" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Online / Offline</span>
+              <button type="button" class="get-api-btn" data-api-card="online">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashOnline">Loading…</div>
+          </div>
+          <div class="dash-card" data-card="camera" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Live Camera</span>
+              <button type="button" class="get-api-btn" data-api-card="camera">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashCamera">
+              <div class="dash-camera-split">
+                <div class="camera-panel dash-cam-panel">
+                  <div class="camera-panel-head"><span>Dock</span><span class="small" id="dashDockMeta">—</span></div>
+                  <div class="player-wrap">
+                    <div class="player-placeholder" id="dashDockPlaceholder">Connecting…</div>
+                    <div id="dashDockVolcHost" class="volc-host" style="display:none"></div>
+                    <video id="dashDockPlayer" controls playsinline muted style="display:none"></video>
+                  </div>
+                </div>
+                <div class="camera-panel dash-cam-panel">
+                  <div class="camera-panel-head"><span>Drone FPV</span><span class="small" id="dashDroneMeta">—</span></div>
+                  <div class="player-wrap">
+                    <div class="player-placeholder" id="dashDronePlaceholder">Connecting…</div>
+                    <div id="dashDroneVolcHost" class="volc-host" style="display:none"></div>
+                    <video id="dashDronePlayer" controls playsinline muted style="display:none"></video>
+                  </div>
+                </div>
+              </div>
+              <p class="small" style="margin:6px 0 0">Click card for full-screen view.</p>
+            </div>
+          </div>
+          <div class="dash-card" data-card="alerts" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Alerts &amp; Events</span>
+              <button type="button" class="get-api-btn" data-api-card="alerts">Get API</button>
+            </div>
+            <div class="dash-card-body">
+              <table class="dash-compact-table" id="dashAlertsTable"><thead><tr><th>Type</th><th>Source</th><th>Time</th></tr></thead><tbody></tbody></table>
+            </div>
+          </div>
+          <div class="dash-card" data-card="missions" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Mission &amp; Media History</span>
+              <button type="button" class="get-api-btn" data-api-card="missions">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashMissions">Loading…</div>
+          </div>
+        </div>
+      </section>
+
       <section id="fleet" class="active">
         <h3>Live Map + Fleet</h3>
         <div class="grid">
@@ -205,6 +359,7 @@
             </div>
             <div class="player-wrap">
               <div class="player-placeholder" id="dockPlaceholder">Waiting for dock stream…</div>
+              <div id="dockVolcHost" class="volc-host" style="display:none"></div>
               <video id="dockPlayer" controls playsinline muted style="display:none"></video>
             </div>
             <div class="stream-statusline" id="dockStatus"></div>
@@ -216,6 +371,7 @@
             </div>
             <div class="player-wrap">
               <div class="player-placeholder" id="dronePlaceholder">Waiting for drone stream…</div>
+              <div id="droneVolcHost" class="volc-host" style="display:none"></div>
               <video id="dronePlayer" controls playsinline muted style="display:none"></video>
             </div>
             <div class="stream-statusline" id="droneStatus"></div>
@@ -289,6 +445,44 @@
     </div>
   </main>
 
+  <div id="cardZoomBackdrop" class="card-zoom-backdrop" aria-hidden="true">
+    <div class="card-zoom" role="dialog" aria-modal="true">
+      <div class="card-zoom-head">
+        <h3 id="cardZoomTitle">Details</h3>
+        <div class="card-zoom-actions">
+          <button type="button" class="get-api-btn" id="cardZoomGetApi">Get API</button>
+          <button type="button" class="card-zoom-close" id="cardZoomClose" title="Close">×</button>
+        </div>
+      </div>
+      <div id="cardZoomBody" class="card-zoom-body"></div>
+    </div>
+  </div>
+  <div id="apiToast" class="api-toast">API value copied</div>
+
+  <template id="zoomCameraTemplate">
+    <p class="statusline">Read-only live view — dock camera and drone FPV.</p>
+    <div class="camera-split">
+      <div class="camera-panel">
+        <div class="camera-panel-head"><span>Dock camera</span><span class="small" id="zoomDockMeta">—</span></div>
+        <div class="player-wrap">
+          <div class="player-placeholder" id="zoomDockPlaceholder">Connecting…</div>
+          <div id="zoomDockVolcHost" class="volc-host" style="display:none"></div>
+          <video id="zoomDockPlayer" controls playsinline muted style="display:none"></video>
+        </div>
+        <div class="stream-statusline" id="zoomDockStatus"></div>
+      </div>
+      <div class="camera-panel">
+        <div class="camera-panel-head"><span>Drone FPV</span><span class="small" id="zoomDroneMeta">—</span></div>
+        <div class="player-wrap">
+          <div class="player-placeholder" id="zoomDronePlaceholder">Connecting…</div>
+          <div id="zoomDroneVolcHost" class="volc-host" style="display:none"></div>
+          <video id="zoomDronePlayer" controls playsinline muted style="display:none"></video>
+        </div>
+        <div class="stream-statusline" id="zoomDroneStatus"></div>
+      </div>
+    </div>
+  </template>
+
   <script>
     const state = {
       devices: [],
@@ -304,6 +498,12 @@
       streamLoaded: false,
       fleetMap: null,
       fleetMarkers: {},
+      dashFleetMap: null,
+      dashFleetMarkers: {},
+      zoomFleetMap: null,
+      zoomFleetMarkers: {},
+      apiSamples: {},
+      zoomCardId: null,
       whepPc: null,
       volcSessions: { dock: null, drone: null },
       volcMod: null,
@@ -332,6 +532,162 @@
       return state.session && (state.session.role === "operator" || state.session.role === "admin");
     }
 
+    function isViewer() {
+      return state.session?.role === "viewer";
+    }
+
+    function primaryDrone() {
+      return state.devices.find((d) => d.role === "drone");
+    }
+
+    function primaryDock() {
+      return state.devices.find((d) => d.role === "gateway" || d.role === "dock");
+    }
+
+    function showApiToast() {
+      const toast = $("apiToast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function formatApiCopy(endpoint, sample, extraEndpoints) {
+      let text = `Endpoint:\n${endpoint}`;
+      if (extraEndpoints?.length) {
+        for (const e of extraEndpoints) text += `\n${e}`;
+      }
+      if (sample !== undefined && sample !== null) {
+        text += `\n\nSample Response:\n${JSON.stringify(sample, null, 2)}`;
+      }
+      return text;
+    }
+
+    function getApiCopyText(cardKey) {
+      const drone = primaryDrone();
+      const dock = primaryDock();
+      const ds = drone?.serialNumber || "{droneSerial}";
+      const gs = dock?.serialNumber || "{dockSerial}";
+      const s = state.apiSamples;
+
+      switch (cardKey) {
+        case "fleet":
+          return formatApiCopy(
+            "GET /v1/marafiq/devices",
+            s.devicesSample,
+            ["GET /v1/marafiq/fleet/summary", "GET /v1/marafiq/fleet/positions"],
+          );
+        case "drone-telemetry":
+          return formatApiCopy(`GET /v1/marafiq/devices/${ds}/telemetry/latest`, s.droneTelemetry);
+        case "dock-telemetry":
+          return formatApiCopy(`GET /v1/marafiq/docks/${gs}`, s.dockTelemetry);
+        case "battery":
+          return formatApiCopy(`GET /v1/marafiq/devices/${ds}/telemetry/latest`, s.batterySample);
+        case "gps":
+          return formatApiCopy(`GET /v1/marafiq/fleet/positions`, s.gpsSample);
+        case "online":
+          return formatApiCopy("GET /v1/marafiq/fleet/summary", s.onlineSample);
+        case "camera":
+          return formatApiCopy(
+            `GET /v1/marafiq/devices/${gs}/live-stream?camera=dock`,
+            s.cameraSample,
+            [`GET /v1/marafiq/devices/${ds}/live-stream?camera=drone`],
+          );
+        case "alerts":
+          return formatApiCopy("GET /v1/marafiq/events?limit=25", s.alertsSample);
+        case "missions":
+          return formatApiCopy(
+            "GET /v1/marafiq/media/recent",
+            s.missionsSample,
+            ["GET /v1/marafiq/tasks", "GET /v1/marafiq/tasks/{taskId}/media"],
+          );
+        default:
+          return "Endpoint:\nGET /v1/marafiq/capabilities";
+      }
+    }
+
+    async function copyApiForCard(cardKey) {
+      try {
+        await navigator.clipboard.writeText(getApiCopyText(cardKey));
+        showApiToast();
+      } catch (e) {
+        alert("Could not copy: " + e.message);
+      }
+    }
+
+    function closeCardZoom() {
+      $("cardZoomBackdrop").classList.remove("open");
+      $("cardZoomBackdrop").setAttribute("aria-hidden", "true");
+      document.body.classList.remove("zoom-open");
+      state.zoomCardId = null;
+      destroyZoomStreams();
+      if (state.zoomFleetMap) {
+        state.zoomFleetMap.remove();
+        state.zoomFleetMap = null;
+        state.zoomFleetMarkers = {};
+      }
+      if (state.dashFleetMap) {
+        setTimeout(() => state.dashFleetMap.invalidateSize(), 80);
+      }
+    }
+
+    function buildFleetZoomHtml() {
+      const rows = state.devices
+        .map((d) => {
+          const pos = (state.apiSamples.positions || []).find((p) => p.serialNumber === d.serialNumber);
+          const loc =
+            pos?.latitude != null && pos?.longitude != null
+              ? `${Number(pos.latitude).toFixed(5)}, ${Number(pos.longitude).toFixed(5)}`
+              : "—";
+          return `<tr>
+            <td>${d.serialNumber}</td>
+            <td>${d.role}</td>
+            <td><span class="pill ${d.online ? "ok" : "bad"}">${d.online ? "online" : "offline"}</span></td>
+            <td>${loc}</td>
+            <td>${pos?.batteryPercent ?? "—"}</td>
+          </tr>`;
+        })
+        .join("");
+      return `
+        <div class="dash-kpis">
+          <div class="dash-kpi"><div class="small">Devices</div><div class="v">${$("dashKTotal").textContent}</div></div>
+          <div class="dash-kpi"><div class="small">Online</div><div class="v">${$("dashKOnline").textContent}</div></div>
+        </div>
+        <div id="zoomFleetMap"></div>
+        <table class="fleet-zoom-table">
+          <thead><tr><th>Serial</th><th>Role</th><th>Status</th><th>Location</th><th>Battery</th></tr></thead>
+          <tbody>${rows || "<tr><td colspan='5'>No devices</td></tr>"}</tbody>
+        </table>`;
+    }
+
+    function openCardZoom(cardId) {
+      const card = document.querySelector(`.dash-card[data-card="${cardId}"]`);
+      if (!card) return;
+      state.zoomCardId = cardId;
+      $("cardZoomTitle").textContent = card.querySelector(".dash-card-title").textContent;
+      const body = $("cardZoomBody");
+
+      if (cardId === "camera") {
+        body.innerHTML = "";
+        body.appendChild($("zoomCameraTemplate").content.cloneNode(true));
+        loadZoomStreams().catch((e) => console.warn("zoom streams", e));
+      } else if (cardId === "fleet") {
+        body.innerHTML = buildFleetZoomHtml();
+        setTimeout(() => {
+          ensureDashFleetMap("zoomFleetMap");
+          if (state.apiSamples.positions) updateDashFleetMap(state.apiSamples.positions, "zoomFleetMap");
+        }, 80);
+      } else {
+        body.innerHTML = card.querySelector(".dash-card-body").innerHTML;
+      }
+
+      $("cardZoomGetApi").onclick = (e) => {
+        e.stopPropagation();
+        copyApiForCard(cardId);
+      };
+      $("cardZoomBackdrop").classList.add("open");
+      $("cardZoomBackdrop").setAttribute("aria-hidden", "false");
+      document.body.classList.add("zoom-open");
+    }
+
     function updateRoleUi() {
       const s = state.session;
       const badge = $("userBadge");
@@ -345,29 +701,85 @@
         overlay.classList.remove("hidden");
         main.style.opacity = ".35";
         main.style.pointerEvents = "none";
+        document.body.classList.remove("viewer-layout");
+        $("appMain").classList.remove("viewer-no-nav");
         return;
       }
-      badge.textContent = `${s.displayName} (${s.role})`;
-      badge.className = `pill role-${s.role}`;
+      badge.textContent = s.displayName;
+      badge.className = "pill";
       $("logoutBtn").style.display = "inline-block";
       overlay.classList.add("hidden");
       main.style.opacity = "1";
       main.style.pointerEvents = "auto";
 
+      const viewer = isViewer();
+      document.body.classList.toggle("viewer-layout", viewer);
+      $("appMain").classList.toggle("viewer-no-nav", viewer);
+      document.querySelectorAll("[data-nav-viewer]").forEach((el) => {
+        el.style.display = "none";
+      });
+      document.querySelectorAll("[data-nav-staff]").forEach((el) => {
+        el.style.display = viewer ? "none" : "";
+      });
+      $("headerSub").textContent = viewer
+        ? "Live fleet intelligence — every asset, one screen."
+        : "Fleet monitoring, live camera, operations, alerts, missions";
+
       document.querySelectorAll("#opsActionGrid .op-btn").forEach((btn) => {
         btn.disabled = !canOperate();
       });
-      $("opsRoleNote").textContent = canOperate()
-        ? "You may run operations (double confirmation required)."
-        : "Viewer role: read-only. Operations are disabled.";
+      if ($("opsRoleNote")) {
+        $("opsRoleNote").textContent = canOperate()
+          ? "You may run operations (double confirmation required)."
+          : "Viewer role: read-only. Operations are disabled.";
+      }
+
+      if (viewer) {
+        document.querySelectorAll("section").forEach((sec) => sec.classList.remove("active"));
+        $("dashboard").classList.add("active");
+        state.activeTab = "dashboard";
+        setTimeout(() => {
+          if (state.dashFleetMap) state.dashFleetMap.invalidateSize();
+        }, 120);
+      } else if (state.activeTab === "dashboard") {
+        document.querySelectorAll("section").forEach((sec) => sec.classList.remove("active"));
+        $("fleet").classList.add("active");
+        state.activeTab = "fleet";
+      }
     }
 
+    document.querySelectorAll(".get-api-btn[data-api-card]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        copyApiForCard(btn.dataset.apiCard);
+      });
+    });
+
+    document.querySelectorAll(".dash-card[data-zoomable]").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".get-api-btn")) return;
+        openCardZoom(card.dataset.card);
+      });
+    });
+
+    $("cardZoomClose").onclick = closeCardZoom;
+    $("cardZoomBackdrop").onclick = (e) => {
+      if (e.target === $("cardZoomBackdrop")) closeCardZoom();
+    };
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("cardZoomBackdrop").classList.contains("open")) closeCardZoom();
+    });
+
     document.querySelectorAll("nav button").forEach((btn) => btn.onclick = () => {
+      if (btn.style.display === "none") return;
       document.querySelectorAll("section").forEach((s) => s.classList.remove("active"));
       $(btn.dataset.tab).classList.add("active");
       state.activeTab = btn.dataset.tab;
       if (btn.dataset.tab === "fleet" && state.fleetMap) {
         setTimeout(() => state.fleetMap.invalidateSize(), 120);
+      }
+      if (btn.dataset.tab === "dashboard" && state.dashFleetMap) {
+        setTimeout(() => state.dashFleetMap.invalidateSize(), 120);
       }
       if (btn.dataset.tab === "camera" && $("camDevice").value && state.session) {
         loadAllStreams();
@@ -421,13 +833,18 @@
       state.isRefreshing = true;
       try {
         const tab = state.activeTab;
-        if (tab === "fleet" || tab === "camera") {
+        if (tab === "fleet" || tab === "camera" || tab === "dashboard" || isViewer()) {
           await loadFleet({ silent: true });
         }
-        if (tab === "ops") {
+        if (tab === "ops" && !isViewer()) {
           await Promise.all([loadOpsReadiness(), loadOpsLog()]);
         }
-        await loadEvents();
+        if (tab === "dashboard" || tab === "alerts" || isViewer()) {
+          await loadEvents();
+        }
+        if (tab === "dashboard" && isViewer()) {
+          await refreshViewerExtras({ silent: true, skipStreams: true });
+        }
         if (tab === "camera" && state.streamLoaded && $("camDevice").value) {
           await refreshCameraTelemetry();
         }
@@ -503,6 +920,8 @@
       stopLiveUpdates();
       clearSession();
       destroyPlayer();
+      destroyDashStreams();
+      destroyZoomStreams();
       state.streamLoaded = false;
       updateRoleUi();
     };
@@ -551,39 +970,51 @@
         video.removeAttribute("src");
         video.style.display = "none";
       }
+      for (const id of ["dockVolcHost", "droneVolcHost"]) {
+        const host = $(id);
+        if (!host) continue;
+        host.innerHTML = "";
+        host.style.display = "none";
+      }
       for (const id of ["dockPlaceholder", "dronePlaceholder"]) {
         const el = $(id);
         if (el) el.style.display = "flex";
       }
     }
 
-    async function playVolc(slot, volc, video, placeholder, statusEl) {
-      const gen = (state.volcSessions[slot]?.gen ?? 0) + 1;
-      state.volcSessions[slot] = { engine: null, joined: false, gen };
+    async function playVolc(slot, volc, _video, placeholder, statusEl, hostIdOverride, sessionKeyOverride) {
+      const hostId = hostIdOverride || (slot === "dock" ? "dockVolcHost" : "droneVolcHost");
+      const sessionKey = sessionKeyOverride || slot;
+      const host = $(hostId);
+      const gen = (state.volcSessions[sessionKey]?.gen ?? 0) + 1;
+      state.volcSessions[sessionKey] = { engine: null, joined: false, gen };
 
       placeholder.textContent = "Connecting to live camera…";
       placeholder.style.display = "flex";
       statusEl.textContent = "";
+      host.innerHTML = "";
+      host.style.display = "none";
 
       const mod = await loadVolcMod();
-      if (state.volcSessions[slot]?.gen !== gen) return;
+      if (state.volcSessions[sessionKey]?.gen !== gen) return;
 
       const VERTC = mod.default;
-      const { StreamIndex, MediaType, RoomProfileType } = mod;
+      const { StreamIndex, RoomProfileType } = mod;
       const engine = VERTC.createEngine(volc.appId, { autoPlayPolicy: 1 });
-      state.volcSessions[slot] = { engine, joined: false, gen };
+      state.volcSessions[sessionKey] = { engine, joined: false, gen };
 
-      const attachRemote = async (userId, mediaType) => {
-        if (userId === volc.userId) return;
-        if (state.volcSessions[slot]?.gen !== gen) return;
+      const attachRemote = async (userId) => {
+        if (!userId || userId === volc.userId) return;
+        if (state.volcSessions[sessionKey]?.gen !== gen) return;
         try {
-          await engine.subscribeStream(userId, mediaType ?? MediaType.AUDIO_AND_VIDEO);
+          host.innerHTML = "";
+          host.style.display = "block";
+          await engine.setUserVisibility(false);
           await engine.setRemoteVideoPlayer(StreamIndex.STREAM_INDEX_MAIN, {
             userId,
-            renderDom: video,
+            renderDom: host,
+            visible: false,
           });
-          video.muted = false;
-          video.style.display = "block";
           placeholder.style.display = "none";
           statusEl.textContent = "● Live";
         } catch (e) {
@@ -591,19 +1022,12 @@
         }
       };
 
-      engine.on(VERTC.events.onUserPublishStream, ({ userId, mediaType }) => {
-        attachRemote(userId, mediaType).catch(() => {});
-      });
-
-      engine.on(VERTC.events.onUserJoined, ({ userInfo }) => {
-        const uid = userInfo?.userId || userInfo?.uid;
-        if (uid && uid !== volc.userId) {
-          setTimeout(() => attachRemote(uid, MediaType.AUDIO_AND_VIDEO).catch(() => {}), 400);
-        }
+      engine.on(VERTC.events.onUserPublishStream, (e) => {
+        attachRemote(e.userId).catch(() => {});
       });
 
       engine.on(VERTC.events.onError, (err) => {
-        if (state.volcSessions[slot]?.gen !== gen) return;
+        if (state.volcSessions[sessionKey]?.gen !== gen) return;
         const msg = err?.message || err?.msg || "RTC connection failed";
         if (msg === "leave_room") return;
         placeholder.textContent = `Live stream error: ${msg}`;
@@ -620,37 +1044,24 @@
             isAutoPublish: false,
             isAutoSubscribeAudio: true,
             isAutoSubscribeVideo: true,
-            roomProfileType: RoomProfileType?.live ?? RoomProfileType?.communication,
+            roomProfileType: RoomProfileType.meeting,
           },
         );
-        if (state.volcSessions[slot]?.gen !== gen) return;
-        state.volcSessions[slot].joined = true;
-
-        if (typeof engine.getRemoteUsers === "function") {
-          const remoteUsers = await engine.getRemoteUsers();
-          for (const user of remoteUsers || []) {
-            const uid = user.userId || user.uid || user;
-            await attachRemote(uid, MediaType.AUDIO_AND_VIDEO);
-          }
-        }
-
-        const deviceSn = volc.roomId.split("_")[0];
-        if (deviceSn && deviceSn !== volc.userId) {
-          setTimeout(() => attachRemote(deviceSn, MediaType.AUDIO_AND_VIDEO).catch(() => {}), 800);
-        }
+        if (state.volcSessions[sessionKey]?.gen !== gen) return;
+        state.volcSessions[sessionKey].joined = true;
 
         setTimeout(() => {
-          if (state.volcSessions[slot]?.gen !== gen) return;
-          if (video.style.display !== "block") {
+          if (state.volcSessions[sessionKey]?.gen !== gen) return;
+          if (host.style.display !== "block") {
             placeholder.textContent =
               slot === "dock"
-                ? "No dock video yet. In FlightHub cockpit, open Dock tab and tap Enable on livestream."
-                : "No drone video yet. Drone may be offline or FPV stream not publishing.";
+                ? "No dock video yet — enable livestream in FH2 Dock tab, then refresh."
+                : "No drone video yet — drone may be offline or FPV not publishing.";
             placeholder.style.display = "flex";
           }
-        }, 12000);
+        }, 15000);
       } catch (e) {
-        if (state.volcSessions[slot]?.gen !== gen) return;
+        if (state.volcSessions[sessionKey]?.gen !== gen) return;
         const msg = e?.message || String(e);
         if (msg !== "leave_room") {
           placeholder.textContent = `Could not join stream: ${msg}`;
@@ -684,7 +1095,7 @@
       statusEl.textContent = "● Live";
     }
 
-    function mountPanelPlayer(slot, data, video, placeholder, statusEl) {
+    function mountPanelPlayer(slot, data, video, placeholder, statusEl, volcHostId, volcSessionKey) {
       const playback = data.playback || { type: "none", viewerNote: data.note };
       statusEl.textContent = playback.viewerNote || data.note || "";
 
@@ -695,7 +1106,7 @@
       }
 
       if (playback.type === "volc" && playback.volc) {
-        playVolc(slot, playback.volc, video, placeholder, statusEl).catch((e) => {
+        playVolc(slot, playback.volc, video, placeholder, statusEl, volcHostId, volcSessionKey).catch((e) => {
           const msg = e?.message || String(e);
           if (msg !== "leave_room") {
             placeholder.textContent = `Could not start player: ${msg}`;
@@ -792,6 +1203,143 @@
       }
     }
 
+    async function destroyZoomStreams() {
+      await destroyVolcSlot("zoom_dock");
+      await destroyVolcSlot("zoom_drone");
+      for (const id of ["zoomDockPlayer", "zoomDronePlayer"]) {
+        const video = $(id);
+        if (!video) continue;
+        video.pause();
+        video.srcObject = null;
+        video.removeAttribute("src");
+        video.style.display = "none";
+      }
+      for (const id of ["zoomDockVolcHost", "zoomDroneVolcHost"]) {
+        const host = $(id);
+        if (!host) continue;
+        host.innerHTML = "";
+        host.style.display = "none";
+      }
+    }
+
+    async function loadZoomStreams() {
+      const dock = primaryDock();
+      const sn = dock?.serialNumber || $("camDevice").value || state.devices[0]?.serialNumber;
+      if (!sn) return;
+
+      const dockParams = new URLSearchParams({ camera: "dock" });
+      const droneParams = new URLSearchParams({ camera: "drone" });
+      const telemSn = primaryDrone()?.serialNumber || sn;
+
+      await destroyZoomStreams();
+
+      const droneDev = primaryDrone();
+      const dockDev = primaryDock();
+      if ($("zoomDockMeta")) $("zoomDockMeta").textContent = dockDev?.online ? "online" : "offline";
+      if ($("zoomDroneMeta")) $("zoomDroneMeta").textContent = droneDev?.online ? "online" : "offline";
+
+      try {
+        const [dockRes, droneRes] = await Promise.all([
+          api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${dockParams}`),
+          api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${droneParams}`),
+        ]);
+        state.apiSamples.cameraSample = { dock: dockRes.data, drone: droneRes.data };
+        mountPanelPlayer(
+          "dock",
+          dockRes.data,
+          $("zoomDockPlayer"),
+          $("zoomDockPlaceholder"),
+          $("zoomDockStatus"),
+          "zoomDockVolcHost",
+          "zoom_dock",
+        );
+        mountPanelPlayer(
+          "drone",
+          droneRes.data,
+          $("zoomDronePlayer"),
+          $("zoomDronePlaceholder"),
+          $("zoomDroneStatus"),
+          "zoomDroneVolcHost",
+          "zoom_drone",
+        );
+      } catch (e) {
+        if ($("zoomDockPlaceholder")) {
+          $("zoomDockPlaceholder").textContent = "Stream error: " + e.message;
+          $("zoomDockPlaceholder").style.display = "flex";
+        }
+      }
+    }
+
+    async function destroyDashStreams() {
+      await destroyVolcSlot("dash_dock");
+      await destroyVolcSlot("dash_drone");
+      for (const id of ["dashDockPlayer", "dashDronePlayer"]) {
+        const video = $(id);
+        if (!video) continue;
+        video.pause();
+        video.srcObject = null;
+        video.removeAttribute("src");
+        video.style.display = "none";
+      }
+      for (const id of ["dashDockVolcHost", "dashDroneVolcHost"]) {
+        const host = $(id);
+        if (!host) continue;
+        host.innerHTML = "";
+        host.style.display = "none";
+      }
+    }
+
+    async function loadDashStreams() {
+      if (!isViewer() && state.activeTab !== "dashboard") return;
+      const dock = primaryDock();
+      const sn = dock?.serialNumber || state.devices[0]?.serialNumber;
+      if (!sn || !$("dashDockPlayer")) return;
+
+      const dockParams = new URLSearchParams({ camera: "dock" });
+      const droneParams = new URLSearchParams({ camera: "drone" });
+
+      await destroyDashStreams();
+
+      const droneDev = primaryDrone();
+      const dockDev = primaryDock();
+      if ($("dashDockMeta")) $("dashDockMeta").textContent = dockDev?.online ? "online" : "offline";
+      if ($("dashDroneMeta")) $("dashDroneMeta").textContent = droneDev?.online ? "online" : "offline";
+
+      try {
+        const [dockRes, droneRes] = await Promise.all([
+          api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${dockParams}`),
+          api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${droneParams}`),
+        ]);
+        state.apiSamples.cameraSample = { dock: dockRes.data, drone: droneRes.data };
+
+        const dashDockStatus = { textContent: "" };
+        const dashDroneStatus = { textContent: "" };
+        mountPanelPlayer(
+          "dock",
+          dockRes.data,
+          $("dashDockPlayer"),
+          $("dashDockPlaceholder"),
+          dashDockStatus,
+          "dashDockVolcHost",
+          "dash_dock",
+        );
+        mountPanelPlayer(
+          "drone",
+          droneRes.data,
+          $("dashDronePlayer"),
+          $("dashDronePlaceholder"),
+          dashDroneStatus,
+          "dashDroneVolcHost",
+          "dash_drone",
+        );
+      } catch (e) {
+        if ($("dashDockPlaceholder")) {
+          $("dashDockPlaceholder").textContent = "Stream error: " + e.message;
+          $("dashDockPlaceholder").style.display = "flex";
+        }
+      }
+    }
+
     function ensureFleetMap() {
       if (state.fleetMap || !window.L) return;
       state.fleetMap = L.map("fleetMap", { zoomControl: true });
@@ -834,6 +1382,241 @@
       }
       if (bounds.length === 1) state.fleetMap.setView(bounds[0], 17);
       else if (bounds.length > 1) state.fleetMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+    }
+
+    function ensureDashFleetMap(containerId = "dashFleetMap") {
+      const mapKey = containerId === "zoomFleetMap" ? "zoomFleetMap" : "dashFleetMap";
+      if (state[mapKey] || !window.L || !$(containerId)) return;
+      state[mapKey] = L.map(containerId, { zoomControl: true });
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: "Esri",
+        maxZoom: 19,
+      }).addTo(state[mapKey]);
+      state[mapKey].setView([22.3, 39.1], 6);
+    }
+
+    function updateDashFleetMap(positions, containerId = "dashFleetMap") {
+      const mapKey = containerId === "zoomFleetMap" ? "zoomFleetMap" : "dashFleetMap";
+      const markersKey = containerId === "zoomFleetMap" ? "zoomFleetMarkers" : "dashFleetMarkers";
+      ensureDashFleetMap(containerId);
+      const map = state[mapKey];
+      if (!map) return;
+      const bounds = [];
+      for (const p of positions) {
+        if (p.latitude == null || p.longitude == null) continue;
+        bounds.push([p.latitude, p.longitude]);
+        const isDrone = p.role === "drone";
+        const color = isDrone ? "#20c997" : "#4ea2ff";
+        const stale = p.freshness !== "live";
+        const label = `${p.callsign || p.serialNumber} (${p.role})`;
+        const popup = `<strong>${label}</strong><br>Online: ${p.online}<br>Battery: ${p.batteryPercent ?? "—"}%<br>Alt: ${p.altitudeM ?? "—"} m`;
+        let marker = state[markersKey][p.serialNumber];
+        if (!marker) {
+          marker = L.circleMarker([p.latitude, p.longitude], {
+            radius: isDrone ? 8 : 6,
+            color,
+            fillColor: color,
+            fillOpacity: stale ? 0.45 : 0.85,
+            weight: stale ? 2 : 3,
+            dashArray: stale ? "4 4" : null,
+          }).addTo(map);
+          marker.bindPopup(popup);
+          state[markersKey][p.serialNumber] = marker;
+        } else {
+          marker.setLatLng([p.latitude, p.longitude]);
+          marker.setStyle({ dashArray: stale ? "4 4" : null, fillOpacity: stale ? 0.45 : 0.85 });
+          marker.setPopupContent(popup);
+        }
+      }
+      if (bounds.length === 1) map.setView(bounds[0], containerId === "zoomFleetMap" ? 17 : 16);
+      else if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 17 });
+    }
+
+    function renderMetricList(el, rows) {
+      el.innerHTML = rows
+        .map(([k, v]) => `<div class="dash-metric"><span>${k}</span><strong>${v}</strong></div>`)
+        .join("");
+    }
+
+    function renderViewerDashboardCards(sum, positions) {
+      if (!isViewer() && state.activeTab !== "dashboard") return;
+
+      $("dashKTotal").textContent = sum.data.totalDevices;
+      $("dashKOnline").textContent = `${sum.data.online}/${sum.data.offline}`;
+
+      state.apiSamples.devicesSample = state.devices[0] || state.devices;
+      state.apiSamples.onlineSample = {
+        totalDevices: sum.data.totalDevices,
+        drones: sum.data.drones,
+        docks: sum.data.docks,
+        online: sum.data.online,
+        offline: sum.data.offline,
+      };
+      state.apiSamples.positions = positions;
+
+      ensureDashFleetMap();
+      updateDashFleetMap(positions);
+
+      const dronePos = positions.find((p) => p.role === "drone");
+      const dockPos = positions.find((p) => p.role === "gateway" || p.role === "dock");
+      const droneDev = primaryDrone();
+      const dockDev = primaryDock();
+
+      renderMetricList($("dashDroneTelem"), [
+        ["Serial", droneDev?.serialNumber || "—"],
+        ["Model", droneDev?.modelName || "—"],
+        ["Online", droneDev?.online ? "yes" : "no"],
+        ["Altitude", dronePos?.altitudeM != null ? `${dronePos.altitudeM} m` : "—"],
+        ["GPS", dronePos?.freshness || "—"],
+      ]);
+
+      renderMetricList($("dashDockTelem"), [
+        ["Serial", dockDev?.serialNumber || "—"],
+        ["Model", dockDev?.modelName || "—"],
+        ["Online", dockDev?.online ? "yes" : "no"],
+        ["Linked drone", state.apiSamples.dockTelemetry?.linkedDroneSerialNumber || "—"],
+        ["GPS", dockPos?.freshness || "—"],
+      ]);
+
+      const battery = dronePos?.batteryPercent;
+      $("dashBattery").innerHTML = battery != null
+        ? `<div class="dash-kpi"><div class="small">Drone battery</div><div class="v">${battery}%</div></div>`
+        : "<span class='small'>No battery data yet.</span>";
+      state.apiSamples.batterySample = {
+        serial: droneDev?.serialNumber,
+        batteryPercent: battery,
+        online: droneDev?.online,
+      };
+
+      const gpsRows = positions
+        .filter((p) => p.latitude != null && p.longitude != null)
+        .map((p) => [
+          p.serialNumber.slice(-6),
+          `${Number(p.latitude).toFixed(5)}, ${Number(p.longitude).toFixed(5)} (${p.freshness})`,
+        ]);
+      renderMetricList(
+        $("dashGps"),
+        gpsRows.length ? gpsRows : [["GPS", "No coordinates yet"]],
+      );
+      state.apiSamples.gpsSample = positions.find((p) => p.latitude != null) || positions[0];
+
+      const onlineRows = state.devices.map((d) => [
+        d.serialNumber.slice(-8),
+        `<span class="pill ${d.online ? "ok" : "bad"}">${d.online ? "online" : "offline"}</span>`,
+      ]);
+      $("dashOnline").innerHTML = onlineRows
+        .map(([k, v]) => `<div class="dash-metric"><span>${k}</span><span>${v}</span></div>`)
+        .join("");
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderMissionsDashboard(bundles, meta) {
+      const el = $("dashMissions");
+      if (!el) return;
+      if (!bundles?.length) {
+        el.innerHTML = "<span class='small'>No recent missions in FlightHub.</span>";
+        return;
+      }
+
+      const blocks = bundles.map((bundle) => {
+        const task = bundle.task || {};
+        const title = task.folderLabel || task.name || task.id;
+        const status = task.mediaUploadStatus || task.status || "—";
+        let body = "";
+        if (bundle.media?.length) {
+          body =
+            '<ul class="dash-media-list">' +
+            bundle.media
+              .map((m) => {
+                const type = m.mediaType === "video" ? "video" : "photo";
+                return `<li><span class="pill ok">${type}</span><span>${escapeHtml(m.name)}</span></li>`;
+              })
+              .join("") +
+            "</ul>";
+        } else {
+          const folderHint = task.folderId
+            ? `FlightHub folder #${task.folderId}`
+            : "FlightHub media library";
+          body = `<p class="dash-media-note">${folderHint} — ${bundle.mediaError?.includes("219021") ? "enable <strong>Task Management</strong> on the Organization Key to load photo names via API." : "no files returned yet."}</p>`;
+        }
+        return `<div class="dash-mission-block"><div class="dash-mission-head"><strong>${escapeHtml(title)}</strong><span class="small">${escapeHtml(status)}</span></div>${body}</div>`;
+      });
+
+      if (meta?.mediaApiBlocked) {
+        blocks.push(
+          `<p class="dash-media-note">Media file names exist in FlightHub but the OpenAPI media endpoint returned 219021. Regenerate the Organization Key with Task Management permission.</p>`,
+        );
+      }
+
+      el.innerHTML = blocks.join("");
+    }
+
+    async function loadMissionMediaSummary() {
+      const res = await api("/v1/marafiq/media/recent?task_limit=4&media_per_task=6");
+      state.apiSamples.missionsSample = res.data?.[0] || res.data;
+      renderMissionsDashboard(res.data || [], res.meta || {});
+    }
+
+    async function refreshViewerExtras(opts = {}) {
+      if (!isViewer() && state.activeTab !== "dashboard") return;
+
+      const drone = primaryDrone();
+      const dock = primaryDock();
+      const fetches = [];
+
+      if (drone) {
+        fetches.push(
+          api(`/v1/marafiq/devices/${drone.serialNumber}/telemetry/latest`).then((r) => {
+            state.apiSamples.droneTelemetry = r.data;
+            if ($("dashDroneTelem") && r.data) {
+              const t = r.data.telemetry || r.data;
+              renderMetricList($("dashDroneTelem"), [
+                ["Serial", r.data.serialNumber || drone.serialNumber],
+                ["Model", r.data.modelName || drone.modelName || "—"],
+                ["Battery", t.batteryPercent != null ? `${t.batteryPercent}%` : "—"],
+                ["Altitude", t.altitudeM != null ? `${t.altitudeM} m` : "—"],
+                ["GPS sats", t.gpsSatellites ?? "—"],
+                ["Freshness", r.meta?.freshness || "—"],
+              ]);
+            }
+          }),
+        );
+      }
+
+      if (dock) {
+        fetches.push(
+          api(`/v1/marafiq/docks/${dock.serialNumber}`).then((r) => {
+            state.apiSamples.dockTelemetry = r.data;
+            if ($("dashDockTelem") && r.data) {
+              renderMetricList($("dashDockTelem"), [
+                ["Serial", dock.serialNumber],
+                ["Model", dock.modelName || "—"],
+                ["Online", dock.online ? "yes" : "no"],
+                ["Linked drone", r.data.linkedDroneSerialNumber || "—"],
+                ["Mode", r.data.stateSummary?.modeCode ?? "—"],
+              ]);
+            }
+          }),
+        );
+      }
+
+      fetches.push(
+        loadMissionMediaSummary().catch(() => {
+          $("dashMissions").textContent = "Could not load mission media.";
+        }),
+      );
+
+      await Promise.all(fetches);
+      if (!opts.skipStreams) {
+        await loadDashStreams();
+      }
     }
 
     function updateTelemetryBanner(positions) {
@@ -926,6 +1709,11 @@
           <td><span class="pill ${p.freshness === "live" ? "ok" : p.freshness === "cached" ? "warn" : "bad"}">${p.freshness || "—"}</span></td>`;
         tbody.appendChild(tr);
       });
+
+      renderViewerDashboardCards(sum, positions);
+      if (isViewer()) {
+        await refreshViewerExtras({ silent: opts.silent, skipStreams: true });
+      }
     }
 
     $("loadStream").onclick = () => loadAllStreams();
@@ -1108,9 +1896,25 @@
       }
     }
 
+    function renderDashAlerts(events) {
+      const tbody = document.querySelector("#dashAlertsTable tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      for (const e of (events || []).slice(0, 8)) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${e.type}</td><td>${e.source}</td><td>${new Date(e.receivedAt).toLocaleString()}</td>`;
+        tbody.appendChild(tr);
+      }
+      if (!events?.length) {
+        tbody.innerHTML = "<tr><td colspan='3' class='small'>No recent events</td></tr>";
+      }
+    }
+
     async function loadEvents() {
       const res = await api("/v1/marafiq/events?limit=25");
+      state.apiSamples.alertsSample = (res.data || []).slice(0, 2);
       renderEventsTable(res.data || []);
+      renderDashAlerts(res.data || []);
     }
 
     function renderEventsTable(events) {
@@ -1184,6 +1988,12 @@
 
     async function refreshDashboard() {
       await loadFleet();
+      if (isViewer()) {
+        await refreshViewerExtras();
+        await loadEvents();
+        updateLiveBadge(true, new Date());
+        return;
+      }
       if (state.session) {
         try {
           await Promise.all([loadOpsCatalog(), loadFh2Links()]);

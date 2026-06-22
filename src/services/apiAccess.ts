@@ -1,0 +1,59 @@
+import type { CcRole } from "./commandCenterAuth.js";
+
+/** GET paths allowed for viewer role (read-only monitoring). */
+const VIEWER_GET_PREFIXES = [
+  "/v1/marafiq/capabilities",
+  "/v1/marafiq/devices",
+  "/v1/marafiq/fleet/",
+  "/v1/marafiq/docks",
+  "/v1/marafiq/tasks",
+  "/v1/marafiq/media/",
+  "/v1/marafiq/events",
+  "/v1/marafiq/mapping/",
+];
+
+export function isViewerReadOnlyAllowed(method: string, path: string): boolean {
+  if (method !== "GET") return false;
+  if (path.startsWith("/v1/marafiq/ops/")) return false;
+  return VIEWER_GET_PREFIXES.some(
+    (prefix) => path === prefix.replace(/\/$/, "") || path.startsWith(prefix),
+  );
+}
+
+export function assertRoleAccess(
+  role: CcRole,
+  method: string,
+  path: string,
+): { allowed: boolean; requiredRole?: CcRole; message?: string } {
+  if (role === "viewer") {
+    if (!isViewerReadOnlyAllowed(method, path)) {
+      return {
+        allowed: false,
+        requiredRole: "operator",
+        message:
+          'Role "viewer" is read-only. This endpoint requires operator or admin access.',
+      };
+    }
+    return { allowed: true };
+  }
+
+  if (method === "POST" && path.startsWith("/v1/marafiq/ops/")) {
+    if (role === "operator" || role === "admin") return { allowed: true };
+    return {
+      allowed: false,
+      requiredRole: "operator",
+      message: "Operator or admin required for flight/dock commands.",
+    };
+  }
+
+  if (method === "POST" && /^\/v1\/marafiq\/events\/[^/]+\/ack$/.test(path)) {
+    if (role === "operator" || role === "admin") return { allowed: true };
+    return {
+      allowed: false,
+      requiredRole: "operator",
+      message: "Operator or admin required to acknowledge events.",
+    };
+  }
+
+  return { allowed: true };
+}
