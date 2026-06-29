@@ -7,7 +7,9 @@ import type {
 import { config } from "../config.js";
 import {
   hasMinRole,
-  resolveRequestRole,
+  verifySessionToken,
+  roleFromApiKey,
+  type CcRole,
 } from "../services/commandCenterAuth.js";
 import { assertRoleAccess } from "../services/apiAccess.js";
 
@@ -76,7 +78,23 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
     const sessionToken =
       typeof sessionHeader === "string" ? sessionHeader : undefined;
 
-    const role = resolveRequestRole(apiKey, sessionToken);
+    let role: CcRole | null = null;
+    let username: string | undefined;
+
+    if (sessionToken) {
+      const verified = verifySessionToken(sessionToken, apiKey);
+      if (!verified) {
+        return reply.status(401).send({
+          error: "invalid_session",
+          message: "Invalid or expired Shamal Platform session. Sign in again.",
+        });
+      }
+      role = verified.role;
+      username = verified.username;
+    } else {
+      role = roleFromApiKey(apiKey);
+    }
+
     if (!role) {
       return reply.status(401).send({
         error: "invalid_session",
@@ -85,6 +103,7 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
     }
 
     request.ccRole = role;
+    request.ccUsername = username;
 
     const access = assertRoleAccess(role, request.method, path);
     if (!access.allowed) {
@@ -101,6 +120,16 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
           error: "forbidden",
           message: `Role "${role}" cannot perform this action. Operator or admin required.`,
           requiredRole: "operator",
+        });
+      }
+    }
+
+    if (path.startsWith("/v1/marafiq/admin/")) {
+      if (!hasMinRole(role, "admin")) {
+        return reply.status(403).send({
+          error: "forbidden",
+          message: "Admin role required for this endpoint.",
+          requiredRole: "admin",
         });
       }
     }

@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { config, readCcCredentialEnv } from "../config.js";
+import { getManagedViewerUsers } from "./viewerUsers.js";
 
 export type CcRole = "viewer" | "operator" | "admin";
 
@@ -146,8 +147,33 @@ function buildCcUsersFromEnv(creds: CcCredentialEnv = {
 /** Loads platform users from .env (re-reads .env on each call for login). */
 export function getCcUsers(): CcUser[] {
   const creds = readCcCredentialEnv();
-  if (creds.ccUsers) return parseUsers(creds.ccUsers);
-  return buildCcUsersFromEnv(creds);
+  const users = creds.ccUsers
+    ? parseUsers(creds.ccUsers)
+    : buildCcUsersFromEnv(creds);
+
+  const existing = new Set(users.map((u) => u.username));
+  for (const viewer of getManagedViewerUsers()) {
+    if (!existing.has(viewer.username)) {
+      users.push(viewer);
+      existing.add(viewer.username);
+    }
+  }
+  return users;
+}
+
+/** Viewer usernames defined in .env (not admin-managed JSON store). */
+export function getEnvViewerUsernames(): Set<string> {
+  const creds = readCcCredentialEnv();
+  if (creds.ccUsers) {
+    return new Set(
+      parseUsers(creds.ccUsers)
+        .filter((u) => u.role === "viewer")
+        .map((u) => u.username),
+    );
+  }
+  const names = new Set<string>();
+  if (creds.ccViewerId) names.add(creds.ccViewerId);
+  return names;
 }
 
 export const ccUsers: CcUser[] = getCcUsers();

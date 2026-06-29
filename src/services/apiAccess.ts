@@ -3,6 +3,7 @@ import type { CcRole } from "./commandCenterAuth.js";
 /** GET paths allowed for viewer role (read-only monitoring). */
 const VIEWER_GET_PREFIXES = [
   "/v1/marafiq/capabilities",
+  "/v1/marafiq/auth/me",
   "/v1/marafiq/devices",
   "/v1/marafiq/fleet/",
   "/v1/marafiq/docks",
@@ -25,7 +26,26 @@ export function assertRoleAccess(
   method: string,
   path: string,
 ): { allowed: boolean; requiredRole?: CcRole; message?: string } {
+  if (path.startsWith("/v1/marafiq/admin/")) {
+    if (role !== "admin") {
+      return {
+        allowed: false,
+        requiredRole: "admin",
+        message: "Admin role required for viewer settings.",
+      };
+    }
+    return { allowed: true };
+  }
+
   if (role === "viewer") {
+    if (method === "PATCH" || method === "PUT" || method === "DELETE") {
+      return {
+        allowed: false,
+        requiredRole: "operator",
+        message:
+          'Role "viewer" is read-only. This endpoint requires operator or admin access.',
+      };
+    }
     if (!isViewerReadOnlyAllowed(method, path)) {
       return {
         allowed: false,

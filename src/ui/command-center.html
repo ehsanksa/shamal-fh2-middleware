@@ -149,29 +149,98 @@
     .api-toast { position:fixed; bottom:20px; right:20px; background:#1a3d2e; border:1px solid #20c997; color:#7bf6cd; padding:10px 14px; border-radius:8px; font-size:12px; z-index:2100; opacity:0; pointer-events:none; transition:opacity .2s; }
     .api-toast.show { opacity:1; }
     .viewer-note { font-size:11px; color:var(--muted); margin:0 0 8px; }
-    main.viewer-no-nav { grid-template-columns: 1fr; }
-    main.viewer-no-nav nav { display: none; }
+    .viewer-client-name { font-size:13px; color:#cfe4ff; font-weight:600; margin-top:4px; }
+    main.viewer-no-nav { grid-template-columns:1fr; }
+    main.viewer-no-nav nav { display:none; }
+    body.viewer-layout #dashboard { padding:16px 18px; }
+    body.viewer-layout #dashboard h3 { margin:0 0 4px; font-size:18px; }
+    body.viewer-layout .viewer-note { margin-bottom:14px; }
+    body.viewer-layout .dash-grid { gap:14px; }
+    body.viewer-layout #dashFleetMap { height:280px; }
+    body.viewer-layout .dash-card[data-permission="fleetOverview"] { min-height:200px; }
+    @media(min-width:1100px){
+      body.viewer-layout .dash-grid { grid-template-columns:repeat(3,1fr); }
+      body.viewer-layout .dash-card[data-permission="fleetOverview"] { grid-column:span 3; }
+      body.viewer-layout #dashFleetMap { height:340px; }
+    }
+    .admin-settings { display:flex; flex-direction:column; gap:16px; max-width:720px; }
+    .admin-settings-card { background:#0c1628; border:1px solid #294466; border-radius:10px; padding:14px; }
+    .admin-settings-card h4 { margin:0 0 10px; font-size:13px; color:#9fd0ff; }
+    .perm-toggle-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid #1e2f48; }
+    .perm-toggle-row:last-child { border-bottom:0; }
+    .perm-toggle-row span { font-size:13px; }
+    .perm-switch { position:relative; width:42px; height:24px; flex-shrink:0; }
+    .perm-switch input { opacity:0; width:0; height:0; position:absolute; }
+    .perm-switch .slider { position:absolute; inset:0; background:#22354f; border-radius:999px; cursor:pointer; transition:background .15s; }
+    .perm-switch .slider::before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#9fb0c9; border-radius:50%; transition:transform .15s, background .15s; }
+    .perm-switch input:checked + .slider { background:#1e4a7a; }
+    .perm-switch input:checked + .slider::before { transform:translateX(18px); background:#9fd0ff; }
+    .admin-status { font-size:12px; min-height:18px; margin-top:8px; }
+    .admin-status.ok { color:#7bf6cd; }
+    .admin-status.err { color:#ff9a9a; }
+    .admin-viewer-table { width:100%; font-size:12px; margin-bottom:12px; }
+    .admin-viewer-table th,.admin-viewer-table td { padding:8px 6px; }
+    .admin-create-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+    .admin-create-grid label { display:block; font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .admin-create-grid input { width:100%; box-sizing:border-box; }
+    .admin-create-grid .full { grid-column:span 2; }
+    .admin-delete-btn { background:#5a2030; border-color:#8a3040; font-size:11px; padding:5px 10px; }
+    .admin-section-title { margin:20px 0 8px; font-size:15px; color:#cfe4ff; }
+    @media(min-width:1100px){
       .dash-grid { grid-template-columns:repeat(4,1fr); }
       .dash-card[data-card="fleet"] { grid-column:span 2; }
       .dash-card[data-card="camera"] { grid-column:span 2; }
     }
-    @media(max-width:960px){ main{grid-template-columns:1fr;} nav{flex-direction:row; overflow:auto;} .grid{grid-template-columns:repeat(2,1fr);} .ops-layout{grid-template-columns:1fr;} .dash-grid{grid-template-columns:1fr;} }
+    @media(max-width:960px){
+      main { grid-template-columns:1fr; overflow:visible; }
+      main > div { overflow:visible; }
+      nav { flex-direction:column; max-height:none; }
+      nav button { width:100%; }
+      .grid { grid-template-columns:repeat(2,1fr); }
+      .ops-layout { grid-template-columns:1fr; }
+      .dash-grid { grid-template-columns:1fr; }
+      .dash-card[data-card="fleet"],
+      .dash-card[data-card="camera"] { grid-column:span 1; }
+      .fleet-map-wrap { grid-template-columns:1fr; min-height:auto; }
+      #fleetMap { height:260px; }
+    }
+    @media(max-width:768px){
+      html, body { height:auto; min-height:100%; overflow:auto; }
+      body { overflow-y:auto; }
+      header { flex-wrap:wrap; padding:10px 12px; gap:8px; align-items:flex-start; }
+      header .auth { width:100%; justify-content:flex-start; flex-wrap:wrap; gap:6px; }
+      header .brand { font-size:15px; }
+      #headerSub { font-size:11px; line-height:1.35; }
+      main { padding:8px; gap:8px; }
+      section { padding:10px; overflow:visible; }
+      .camera-split, .dash-camera-split { grid-template-columns:1fr; }
+      .camera-panel .player-wrap, .dash-cam-panel .player-wrap { min-height:200px; }
+      .card-zoom-backdrop { padding:0; align-items:stretch; }
+      .card-zoom { width:100%; max-width:100%; max-height:100vh; border-radius:0; }
+      .card-zoom .camera-split { min-height:auto; }
+      .card-zoom .player-wrap { min-height:220px; }
+      .row { gap:6px; }
+      .row input, .row select, .row button { width:100%; }
+      .camera-toolbar select, .camera-toolbar button { width:100%; }
+      .dash-card { min-height:110px; }
+      #dashFleetMap { height:200px; }
+      .get-api-btn { padding:6px 10px; font-size:11px; }
+    }
   </style>
 </head>
 <body>
   <div id="loginOverlay" class="overlay">
     <div class="card">
       <h2>Shamal Platform</h2>
-      <p class="small">Sign in with your assigned role (viewer, operator, or admin).</p>
+      <p class="small">Sign in with your assigned account credentials.</p>
       <label>Username</label>
-      <input id="loginUser" placeholder="admin / operator / viewer" autocomplete="username" style="width:100%" />
+      <input id="loginUser" placeholder="Username" autocomplete="username" style="width:100%" />
       <label>Password</label>
       <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" style="width:100%" />
       <div class="row" style="margin-top:14px">
         <button id="loginBtn" style="flex:1">Sign In</button>
       </div>
       <p id="loginError" class="danger-text" style="min-height:18px"></p>
-      <p class="small" style="margin-top:12px">Use the admin (and optional operator/viewer) credentials configured in the server <code>.env</code> file.</p>
     </div>
   </div>
 
@@ -205,6 +274,7 @@
     <div>
       <div class="brand">Shamal Platform</div>
       <div class="small" id="headerSub">Fleet monitoring, live camera, operations, alerts, missions</div>
+      <div class="viewer-client-name" id="viewerClientName" style="display:none"></div>
     </div>
     <div class="auth">
       <span id="liveBadge" class="pill bad" style="display:none">● Offline</span>
@@ -221,13 +291,14 @@
       <button data-tab="ops" data-nav-staff>3) Operations Panel</button>
       <button data-tab="alerts" data-nav-staff>4) Alerts &amp; Events</button>
       <button data-tab="history" data-nav-staff>5) Mission &amp; Media History</button>
+      <button data-tab="admin" data-nav-admin style="display:none">Admin Settings</button>
     </nav>
     <div>
       <section id="dashboard">
         <h3>Monitoring Dashboard</h3>
-        <p class="viewer-note">Map, telemetry, live camera, alerts, and mission activity — unified in one view.</p>
+        <p class="viewer-note">Live fleet monitoring — map, telemetry, camera, and mission activity.</p>
         <div class="dash-grid" id="dashGrid">
-          <div class="dash-card" data-card="fleet" data-zoomable>
+          <div class="dash-card" data-card="fleet" data-permission="fleetOverview" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Fleet Overview</span>
               <button type="button" class="get-api-btn" data-api-card="fleet">Get API</button>
@@ -240,69 +311,75 @@
               <div id="dashFleetMap"></div>
             </div>
           </div>
-          <div class="dash-card" data-card="drone-telemetry" data-zoomable>
+          <div class="dash-card" data-card="drone-telemetry" data-permission="droneTelemetry" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Drone Telemetry</span>
               <button type="button" class="get-api-btn" data-api-card="drone-telemetry">Get API</button>
             </div>
             <div class="dash-card-body" id="dashDroneTelem">Loading…</div>
           </div>
-          <div class="dash-card" data-card="dock-telemetry" data-zoomable>
+          <div class="dash-card" data-card="dock-telemetry" data-permission="dockTelemetry" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Dock Telemetry</span>
               <button type="button" class="get-api-btn" data-api-card="dock-telemetry">Get API</button>
             </div>
             <div class="dash-card-body" id="dashDockTelem">Loading…</div>
           </div>
-          <div class="dash-card" data-card="battery" data-zoomable>
+          <div class="dash-card" data-card="battery" data-permission="batteryStatus" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Battery Status</span>
               <button type="button" class="get-api-btn" data-api-card="battery">Get API</button>
             </div>
             <div class="dash-card-body" id="dashBattery">Loading…</div>
           </div>
-          <div class="dash-card" data-card="gps" data-zoomable>
+          <div class="dash-card" data-card="gps" data-permission="gpsLocation" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">GPS / Location</span>
               <button type="button" class="get-api-btn" data-api-card="gps">Get API</button>
             </div>
             <div class="dash-card-body" id="dashGps">Loading…</div>
           </div>
-          <div class="dash-card" data-card="online" data-zoomable>
+          <div class="dash-card" data-card="online" data-permission="onlineOffline" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Online / Offline</span>
               <button type="button" class="get-api-btn" data-api-card="online">Get API</button>
             </div>
             <div class="dash-card-body" id="dashOnline">Loading…</div>
           </div>
-          <div class="dash-card" data-card="camera" data-zoomable>
+          <div class="dash-card" data-card="camera" data-permission="liveCamera" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Live Camera</span>
               <button type="button" class="get-api-btn" data-api-card="camera">Get API</button>
             </div>
             <div class="dash-card-body" id="dashCamera">
-              <div class="dash-camera-split">
-                <div class="camera-panel dash-cam-panel">
-                  <div class="camera-panel-head"><span>Dock</span><span class="small" id="dashDockMeta">—</span></div>
-                  <div class="player-wrap">
-                    <div class="player-placeholder" id="dashDockPlaceholder">Connecting…</div>
-                    <div id="dashDockVolcHost" class="volc-host" style="display:none"></div>
-                    <video id="dashDockPlayer" controls playsinline muted style="display:none"></video>
-                  </div>
-                </div>
-                <div class="camera-panel dash-cam-panel">
-                  <div class="camera-panel-head"><span>Drone FPV</span><span class="small" id="dashDroneMeta">—</span></div>
-                  <div class="player-wrap">
-                    <div class="player-placeholder" id="dashDronePlaceholder">Connecting…</div>
-                    <div id="dashDroneVolcHost" class="volc-host" style="display:none"></div>
-                    <video id="dashDronePlayer" controls playsinline muted style="display:none"></video>
-                  </div>
+              <div class="camera-panel dash-cam-panel">
+                <div class="camera-panel-head"><span>Dock</span><span class="small" id="dashDockMeta">—</span></div>
+                <div class="player-wrap">
+                  <div class="player-placeholder" id="dashDockPlaceholder">Connecting…</div>
+                  <div id="dashDockVolcHost" class="volc-host" style="display:none"></div>
+                  <video id="dashDockPlayer" controls playsinline muted style="display:none"></video>
                 </div>
               </div>
               <p class="small" style="margin:6px 0 0">Click card for full-screen view.</p>
             </div>
           </div>
-          <div class="dash-card" data-card="alerts" data-zoomable>
+          <div class="dash-card" data-card="drone-fpv" data-permission="droneFpv" data-zoomable>
+            <div class="dash-card-head">
+              <span class="dash-card-title">Drone FPV</span>
+              <button type="button" class="get-api-btn" data-api-card="drone-fpv">Get API</button>
+            </div>
+            <div class="dash-card-body" id="dashDroneFpv">
+              <div class="camera-panel dash-cam-panel">
+                <div class="camera-panel-head"><span>Drone FPV</span><span class="small" id="dashDroneMeta">—</span></div>
+                <div class="player-wrap">
+                  <div class="player-placeholder" id="dashDronePlaceholder">Connecting…</div>
+                  <div id="dashDroneVolcHost" class="volc-host" style="display:none"></div>
+                  <video id="dashDronePlayer" controls playsinline muted style="display:none"></video>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-card" data-card="alerts" data-permission="alertsEvents" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Alerts &amp; Events</span>
               <button type="button" class="get-api-btn" data-api-card="alerts">Get API</button>
@@ -311,7 +388,7 @@
               <table class="dash-compact-table" id="dashAlertsTable"><thead><tr><th>Type</th><th>Source</th><th>Time</th></tr></thead><tbody></tbody></table>
             </div>
           </div>
-          <div class="dash-card" data-card="missions" data-zoomable>
+          <div class="dash-card" data-card="missions" data-permission="missionMediaHistory" data-zoomable>
             <div class="dash-card-head">
               <span class="dash-card-title">Mission &amp; Media History</span>
               <button type="button" class="get-api-btn" data-api-card="missions">Get API</button>
@@ -442,6 +519,70 @@
         <div class="pre" id="mediaInfo">Media not loaded.</div>
         <div class="pre" id="trackInfo">Trajectory not loaded.</div>
       </section>
+
+      <section id="admin">
+        <h3>Admin Settings</h3>
+
+        <div class="admin-settings">
+          <div class="admin-settings-card">
+            <h4>Viewer Accounts</h4>
+            <p class="statusline">Create viewer logins for clients. Accounts created here can be deleted from the panel; accounts defined in <code>.env</code> must be removed there.</p>
+            <table class="admin-viewer-table">
+              <thead>
+                <tr><th>Client</th><th>Username</th><th>Source</th><th></th></tr>
+              </thead>
+              <tbody id="adminViewerListBody">
+                <tr><td colspan="4" class="small">Loading…</td></tr>
+              </tbody>
+            </table>
+            <div class="admin-create-grid">
+              <div>
+                <label for="adminNewViewerUser">Username</label>
+                <input id="adminNewViewerUser" placeholder="client-viewer" autocomplete="off" />
+              </div>
+              <div>
+                <label for="adminNewViewerPass">Password</label>
+                <input id="adminNewViewerPass" type="password" placeholder="Minimum 4 characters" autocomplete="new-password" />
+              </div>
+              <div class="full">
+                <label for="adminNewViewerName">Client / display name</label>
+                <input id="adminNewViewerName" placeholder="e.g. Marafiq" autocomplete="off" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button id="adminCreateViewer">Create viewer</button>
+            </div>
+            <p id="adminViewerStatus" class="admin-status"></p>
+          </div>
+
+          <div class="admin-section-title">Viewer Screen Settings</div>
+          <p class="statusline">Control which dashboard cards each viewer account can see.</p>
+          <div class="admin-settings-card">
+            <h4>Viewer account</h4>
+            <select id="adminViewerSelect" style="width:100%"></select>
+          </div>
+          <div class="admin-settings-card">
+            <h4>Core Monitoring</h4>
+            <div id="adminPermCore"></div>
+          </div>
+          <div class="admin-settings-card">
+            <h4>Media</h4>
+            <div id="adminPermMedia"></div>
+          </div>
+          <div class="admin-settings-card">
+            <h4>Operations</h4>
+            <div id="adminPermOps"></div>
+          </div>
+          <div class="admin-settings-card">
+            <h4>Actions</h4>
+            <div id="adminPermActions"></div>
+          </div>
+          <div class="row">
+            <button id="adminSaveViewerSettings">Save settings</button>
+          </div>
+          <p id="adminSettingsStatus" class="admin-status"></p>
+        </div>
+      </section>
     </div>
   </main>
 
@@ -507,6 +648,7 @@
       whepPc: null,
       volcSessions: { dock: null, drone: null },
       volcMod: null,
+      adminViewers: [],
     };
     const LIVE_INTERVAL_MS = 10_000;
     const $ = (id) => document.getElementById(id);
@@ -534,6 +676,280 @@
 
     function isViewer() {
       return state.session?.role === "viewer";
+    }
+
+    function isAdmin() {
+      return state.session?.role === "admin";
+    }
+
+    const DEFAULT_VIEWER_DASHBOARD_PERMISSIONS = {
+      fleetOverview: true,
+      droneTelemetry: true,
+      dockTelemetry: true,
+      batteryStatus: true,
+      gpsLocation: true,
+      onlineOffline: true,
+      liveCamera: true,
+      droneFpv: false,
+      alertsEvents: false,
+      missionMediaHistory: true,
+      refreshButton: true,
+      getApiButtons: false,
+    };
+
+    const ADMIN_PERMISSION_GROUPS = [
+      {
+        containerId: "adminPermCore",
+        items: [
+          ["fleetOverview", "Fleet Overview / Map"],
+          ["droneTelemetry", "Drone Telemetry"],
+          ["dockTelemetry", "Dock Telemetry"],
+          ["batteryStatus", "Battery Status"],
+          ["gpsLocation", "GPS / Location"],
+          ["onlineOffline", "Online / Offline"],
+        ],
+      },
+      {
+        containerId: "adminPermMedia",
+        items: [
+          ["liveCamera", "Live Camera"],
+          ["droneFpv", "Drone FPV"],
+          ["missionMediaHistory", "Mission & Media History"],
+        ],
+      },
+      {
+        containerId: "adminPermOps",
+        items: [["alertsEvents", "Alerts & Events"]],
+      },
+      {
+        containerId: "adminPermActions",
+        items: [
+          ["refreshButton", "Refresh Button"],
+          ["getApiButtons", "Get API Buttons"],
+        ],
+      },
+    ];
+
+    function viewerPermissions() {
+      if (!isViewer()) return null;
+      return {
+        ...DEFAULT_VIEWER_DASHBOARD_PERMISSIONS,
+        ...(state.session?.viewerDashboardPermissions || {}),
+      };
+    }
+
+    function cardAllowed(permissionKey) {
+      if (!isViewer()) return true;
+      const perms = viewerPermissions();
+      return perms ? perms[permissionKey] === true : false;
+    }
+
+    function canShowGetApiButtons() {
+      if (!isViewer()) return true;
+      return cardAllowed("getApiButtons");
+    }
+
+    function applyViewerDashboardPermissions() {
+      const perms = viewerPermissions();
+      document.querySelectorAll(".dash-card[data-permission]").forEach((card) => {
+        const key = card.dataset.permission;
+        const allowed = !isViewer() || (perms && perms[key] === true);
+        card.style.display = allowed ? "" : "none";
+      });
+
+      const showApi = canShowGetApiButtons();
+      document.querySelectorAll(".get-api-btn[data-api-card]").forEach((btn) => {
+        btn.style.display = showApi ? "" : "none";
+      });
+      if ($("cardZoomGetApi")) {
+        $("cardZoomGetApi").style.display = showApi ? "" : "none";
+      }
+
+      if ($("refreshAll")) {
+        const showRefresh = !isViewer() || cardAllowed("refreshButton");
+        $("refreshAll").style.display = showRefresh ? "" : "none";
+      }
+
+      if ($("viewerClientName")) {
+        if (isViewer() && state.session?.displayName) {
+          $("viewerClientName").textContent = state.session.displayName;
+          $("viewerClientName").style.display = "block";
+        } else {
+          $("viewerClientName").style.display = "none";
+        }
+      }
+    }
+
+    async function syncSessionFromServer() {
+      if (!state.session?.sessionToken) return;
+      const res = await api("/v1/marafiq/auth/me");
+      if (res.data?.viewerDashboardPermissions) {
+        state.session.viewerDashboardPermissions = res.data.viewerDashboardPermissions;
+        saveSession(state.session);
+      }
+      if (res.data?.displayName) {
+        state.session.displayName = res.data.displayName;
+        saveSession(state.session);
+      }
+      applyViewerDashboardPermissions();
+    }
+
+    function buildAdminPermissionToggles() {
+      for (const group of ADMIN_PERMISSION_GROUPS) {
+        const container = $(group.containerId);
+        if (!container || container.dataset.built === "1") continue;
+        container.innerHTML = group.items
+          .map(
+            ([key, label]) => `
+          <label class="perm-toggle-row">
+            <span>${label}</span>
+            <span class="perm-switch">
+              <input type="checkbox" data-perm="${key}" />
+              <span class="slider"></span>
+            </span>
+          </label>`,
+          )
+          .join("");
+        container.dataset.built = "1";
+      }
+    }
+
+    function readAdminPermissionForm() {
+      const patch = {};
+      document.querySelectorAll("#admin input[data-perm]").forEach((input) => {
+        patch[input.dataset.perm] = input.checked;
+      });
+      return patch;
+    }
+
+    function fillAdminPermissionForm(permissions) {
+      document.querySelectorAll("#admin input[data-perm]").forEach((input) => {
+        input.checked = permissions[input.dataset.perm] === true;
+      });
+    }
+
+    function renderAdminViewerList(viewers) {
+      state.adminViewers = viewers;
+      const tbody = $("adminViewerListBody");
+      if (!viewers.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="small">No viewer accounts yet. Create one below.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = viewers
+        .map((v) => {
+          const action = v.deletable
+            ? `<button type="button" class="admin-delete-btn" data-delete-viewer="${escapeHtml(v.viewerId)}">Delete</button>`
+            : `<span class="small">.env only</span>`;
+          const source = v.source === "env" ? ".env" : "Admin panel";
+          return `<tr>
+            <td>${escapeHtml(v.displayName)}</td>
+            <td><code>${escapeHtml(v.viewerId)}</code></td>
+            <td>${source}</td>
+            <td>${action}</td>
+          </tr>`;
+        })
+        .join("");
+    }
+
+    function setAdminViewerStatus(message, type = "") {
+      const el = $("adminViewerStatus");
+      el.textContent = message;
+      el.className = "admin-status" + (type ? ` ${type}` : "");
+    }
+
+    function setAdminSettingsStatus(message, type = "") {
+      const el = $("adminSettingsStatus");
+      el.textContent = message;
+      el.className = "admin-status" + (type ? ` ${type}` : "");
+    }
+
+    async function loadAdminViewerSettings() {
+      if (!isAdmin()) return;
+      buildAdminPermissionToggles();
+      const listRes = await api("/v1/marafiq/admin/viewers");
+      const viewers = listRes.data || [];
+      renderAdminViewerList(viewers);
+
+      const sel = $("adminViewerSelect");
+      const prev = sel.value;
+      sel.innerHTML = "";
+      viewers.forEach((v) => {
+        const o = document.createElement("option");
+        o.value = v.viewerId;
+        o.textContent = `${v.displayName} (${v.viewerId})`;
+        sel.appendChild(o);
+      });
+      if (!viewers.length) {
+        setAdminSettingsStatus("Create a viewer account to configure dashboard cards.", "err");
+        return;
+      }
+      const pick = prev && viewers.some((v) => v.viewerId === prev) ? prev : viewers[0].viewerId;
+      sel.value = pick;
+      await loadAdminViewerSettingsFor(sel.value);
+    }
+
+    async function loadAdminViewerSettingsFor(viewerId) {
+      const res = await api(`/v1/marafiq/admin/viewer-settings/${encodeURIComponent(viewerId)}`);
+      fillAdminPermissionForm(res.data.permissions);
+      setAdminSettingsStatus("");
+    }
+
+    async function saveAdminViewerSettings() {
+      const viewerId = $("adminViewerSelect").value;
+      if (!viewerId) return;
+      setAdminSettingsStatus("Saving…");
+      try {
+        const res = await api(
+          `/v1/marafiq/admin/viewer-settings/${encodeURIComponent(viewerId)}`,
+          { method: "PATCH", body: JSON.stringify(readAdminPermissionForm()) },
+        );
+        fillAdminPermissionForm(res.data.permissions);
+        setAdminSettingsStatus("Settings saved successfully.", "ok");
+      } catch (e) {
+        setAdminSettingsStatus(e.message, "err");
+      }
+    }
+
+    async function createAdminViewer() {
+      const username = $("adminNewViewerUser").value.trim();
+      const password = $("adminNewViewerPass").value;
+      const displayName = $("adminNewViewerName").value.trim();
+      if (!username || !password || !displayName) {
+        setAdminViewerStatus("Username, password, and display name are required.", "err");
+        return;
+      }
+      setAdminViewerStatus("Creating…");
+      try {
+        await api("/v1/marafiq/admin/viewers", {
+          method: "POST",
+          body: JSON.stringify({ username, password, displayName }),
+        });
+        $("adminNewViewerUser").value = "";
+        $("adminNewViewerPass").value = "";
+        $("adminNewViewerName").value = "";
+        setAdminViewerStatus(`Viewer "${username}" created successfully.`, "ok");
+        await loadAdminViewerSettings();
+        $("adminViewerSelect").value = username;
+        await loadAdminViewerSettingsFor(username);
+      } catch (e) {
+        setAdminViewerStatus(e.message, "err");
+      }
+    }
+
+    async function deleteAdminViewer(viewerId) {
+      const viewer = state.adminViewers.find((v) => v.viewerId === viewerId);
+      const label = viewer?.displayName || viewerId;
+      if (!confirm(`Delete viewer account "${label}" (${viewerId})? This cannot be undone.`)) return;
+      setAdminViewerStatus("Deleting…");
+      try {
+        await api(`/v1/marafiq/admin/viewers/${encodeURIComponent(viewerId)}`, {
+          method: "DELETE",
+        });
+        setAdminViewerStatus(`Viewer "${viewerId}" deleted.`, "ok");
+        await loadAdminViewerSettings();
+      } catch (e) {
+        setAdminViewerStatus(e.message, "err");
+      }
     }
 
     function primaryDrone() {
@@ -588,8 +1004,12 @@
         case "camera":
           return formatApiCopy(
             `GET /v1/marafiq/devices/${gs}/live-stream?camera=dock`,
-            s.cameraSample,
-            [`GET /v1/marafiq/devices/${ds}/live-stream?camera=drone`],
+            s.cameraSample?.dock || s.cameraSample,
+          );
+        case "drone-fpv":
+          return formatApiCopy(
+            `GET /v1/marafiq/devices/${ds}/live-stream?camera=drone`,
+            s.cameraSample?.drone || s.cameraSample,
           );
         case "alerts":
           return formatApiCopy("GET /v1/marafiq/events?limit=25", s.alertsSample);
@@ -665,7 +1085,7 @@
       $("cardZoomTitle").textContent = card.querySelector(".dash-card-title").textContent;
       const body = $("cardZoomBody");
 
-      if (cardId === "camera") {
+      if (cardId === "camera" || cardId === "drone-fpv") {
         body.innerHTML = "";
         body.appendChild($("zoomCameraTemplate").content.cloneNode(true));
         loadZoomStreams().catch((e) => console.warn("zoom streams", e));
@@ -721,9 +1141,14 @@
       document.querySelectorAll("[data-nav-staff]").forEach((el) => {
         el.style.display = viewer ? "none" : "";
       });
+      document.querySelectorAll("[data-nav-admin]").forEach((el) => {
+        el.style.display = isAdmin() ? "" : "none";
+      });
       $("headerSub").textContent = viewer
         ? "Live fleet intelligence — every asset, one screen."
         : "Fleet monitoring, live camera, operations, alerts, missions";
+
+      applyViewerDashboardPermissions();
 
       document.querySelectorAll("#opsActionGrid .op-btn").forEach((btn) => {
         btn.disabled = !canOperate();
@@ -780,6 +1205,9 @@
       }
       if (btn.dataset.tab === "dashboard" && state.dashFleetMap) {
         setTimeout(() => state.dashFleetMap.invalidateSize(), 120);
+      }
+      if (btn.dataset.tab === "admin" && isAdmin()) {
+        loadAdminViewerSettings().catch((e) => alert(e.message));
       }
       if (btn.dataset.tab === "camera" && $("camDevice").value && state.session) {
         loadAllStreams();
@@ -839,7 +1267,7 @@
         if (tab === "ops" && !isViewer()) {
           await Promise.all([loadOpsReadiness(), loadOpsLog()]);
         }
-        if (tab === "dashboard" || tab === "alerts" || isViewer()) {
+        if (tab === "dashboard" || tab === "alerts" || (isViewer() && cardAllowed("alertsEvents"))) {
           await loadEvents();
         }
         if (tab === "dashboard" && isViewer()) {
@@ -907,9 +1335,12 @@
           role: body.data.role,
           displayName: body.data.displayName,
           sessionToken: body.data.sessionToken,
+          username: body.data.username,
+          viewerDashboardPermissions: body.data.viewerDashboardPermissions,
         });
         updateRoleUi();
         startLiveUpdates();
+        if (isViewer()) await syncSessionFromServer();
         await refreshDashboard();
       } catch (e) {
         $("loginError").textContent = e.message;
@@ -1097,7 +1528,17 @@
 
     function mountPanelPlayer(slot, data, video, placeholder, statusEl, volcHostId, volcSessionKey) {
       const playback = data.playback || { type: "none", viewerNote: data.note };
-      statusEl.textContent = playback.viewerNote || data.note || "";
+      const host = volcHostId ? $(volcHostId) : null;
+      if (statusEl) statusEl.textContent = playback.viewerNote || data.note || "";
+      if (video) {
+        video.pause();
+        video.style.display = "none";
+        video.removeAttribute("src");
+      }
+      if (host) {
+        host.innerHTML = "";
+        host.style.display = "none";
+      }
 
       if (!data.streamingSupported || playback.type === "none") {
         placeholder.textContent = playback.viewerNote || data.note || "Stream unavailable.";
@@ -1293,7 +1734,11 @@
       if (!isViewer() && state.activeTab !== "dashboard") return;
       const dock = primaryDock();
       const sn = dock?.serialNumber || state.devices[0]?.serialNumber;
-      if (!sn || !$("dashDockPlayer")) return;
+      if (!sn) return;
+
+      const wantDock = cardAllowed("liveCamera");
+      const wantDrone = cardAllowed("droneFpv");
+      if (!wantDock && !wantDrone) return;
 
       const dockParams = new URLSearchParams({ camera: "dock" });
       const droneParams = new URLSearchParams({ camera: "drone" });
@@ -1306,34 +1751,58 @@
       if ($("dashDroneMeta")) $("dashDroneMeta").textContent = droneDev?.online ? "online" : "offline";
 
       try {
-        const [dockRes, droneRes] = await Promise.all([
-          api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${dockParams}`),
-          api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${droneParams}`),
-        ]);
-        state.apiSamples.cameraSample = { dock: dockRes.data, drone: droneRes.data };
+        const fetches = [];
+        if (wantDock && $("dashDockPlayer")) {
+          fetches.push(
+            api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${dockParams}`).then(
+              (r) => ({ slot: "dock", data: r.data }),
+            ),
+          );
+        }
+        if (wantDrone && $("dashDronePlayer")) {
+          fetches.push(
+            api(`/v1/marafiq/devices/${encodeURIComponent(sn)}/live-stream?${droneParams}`).then(
+              (r) => ({ slot: "drone", data: r.data }),
+            ),
+          );
+        }
+        const results = await Promise.all(fetches);
+        const dockRes = results.find((r) => r.slot === "dock");
+        const droneRes = results.find((r) => r.slot === "drone");
+        state.apiSamples.cameraSample = {
+          dock: dockRes?.data,
+          drone: droneRes?.data,
+        };
 
-        const dashDockStatus = { textContent: "" };
-        const dashDroneStatus = { textContent: "" };
-        mountPanelPlayer(
-          "dock",
-          dockRes.data,
-          $("dashDockPlayer"),
-          $("dashDockPlaceholder"),
-          dashDockStatus,
-          "dashDockVolcHost",
-          "dash_dock",
-        );
-        mountPanelPlayer(
-          "drone",
-          droneRes.data,
-          $("dashDronePlayer"),
-          $("dashDronePlaceholder"),
-          dashDroneStatus,
-          "dashDroneVolcHost",
-          "dash_drone",
-        );
+        if (wantDock && dockRes && $("dashDockPlayer")) {
+          mountPanelPlayer(
+            "dock",
+            dockRes.data,
+            $("dashDockPlayer"),
+            $("dashDockPlaceholder"),
+            $("dashDockStatus") || { textContent: "" },
+            "dashDockVolcHost",
+            "dash_dock",
+          );
+        }
+        if (wantDrone && droneRes && $("dashDronePlayer")) {
+          mountPanelPlayer(
+            "drone",
+            droneRes.data,
+            $("dashDronePlayer"),
+            $("dashDronePlaceholder"),
+            $("dashDroneStatus") || { textContent: "" },
+            "dashDroneVolcHost",
+            "dash_drone",
+          );
+          if ($("dashDronePlaceholder") && !droneRes.data?.streamingSupported) {
+            $("dashDronePlaceholder").textContent =
+              droneRes.data?.playback?.viewerNote || "Drone FPV unavailable.";
+            $("dashDronePlaceholder").style.display = "flex";
+          }
+        }
       } catch (e) {
-        if ($("dashDockPlaceholder")) {
+        if (wantDock && $("dashDockPlaceholder")) {
           $("dashDockPlaceholder").textContent = "Stream error: " + e.message;
           $("dashDockPlaceholder").style.display = "flex";
         }
@@ -1441,8 +1910,12 @@
     function renderViewerDashboardCards(sum, positions) {
       if (!isViewer() && state.activeTab !== "dashboard") return;
 
-      $("dashKTotal").textContent = sum.data.totalDevices;
-      $("dashKOnline").textContent = `${sum.data.online}/${sum.data.offline}`;
+      if (cardAllowed("fleetOverview")) {
+        $("dashKTotal").textContent = sum.data.totalDevices;
+        $("dashKOnline").textContent = `${sum.data.online}/${sum.data.offline}`;
+        ensureDashFleetMap();
+        updateDashFleetMap(positions);
+      }
 
       state.apiSamples.devicesSample = state.devices[0] || state.devices;
       state.apiSamples.onlineSample = {
@@ -1454,59 +1927,66 @@
       };
       state.apiSamples.positions = positions;
 
-      ensureDashFleetMap();
-      updateDashFleetMap(positions);
-
       const dronePos = positions.find((p) => p.role === "drone");
       const dockPos = positions.find((p) => p.role === "gateway" || p.role === "dock");
       const droneDev = primaryDrone();
       const dockDev = primaryDock();
 
-      renderMetricList($("dashDroneTelem"), [
-        ["Serial", droneDev?.serialNumber || "—"],
-        ["Model", droneDev?.modelName || "—"],
-        ["Online", droneDev?.online ? "yes" : "no"],
-        ["Altitude", dronePos?.altitudeM != null ? `${dronePos.altitudeM} m` : "—"],
-        ["GPS", dronePos?.freshness || "—"],
-      ]);
-
-      renderMetricList($("dashDockTelem"), [
-        ["Serial", dockDev?.serialNumber || "—"],
-        ["Model", dockDev?.modelName || "—"],
-        ["Online", dockDev?.online ? "yes" : "no"],
-        ["Linked drone", state.apiSamples.dockTelemetry?.linkedDroneSerialNumber || "—"],
-        ["GPS", dockPos?.freshness || "—"],
-      ]);
-
-      const battery = dronePos?.batteryPercent;
-      $("dashBattery").innerHTML = battery != null
-        ? `<div class="dash-kpi"><div class="small">Drone battery</div><div class="v">${battery}%</div></div>`
-        : "<span class='small'>No battery data yet.</span>";
-      state.apiSamples.batterySample = {
-        serial: droneDev?.serialNumber,
-        batteryPercent: battery,
-        online: droneDev?.online,
-      };
-
-      const gpsRows = positions
-        .filter((p) => p.latitude != null && p.longitude != null)
-        .map((p) => [
-          p.serialNumber.slice(-6),
-          `${Number(p.latitude).toFixed(5)}, ${Number(p.longitude).toFixed(5)} (${p.freshness})`,
+      if (cardAllowed("droneTelemetry") && $("dashDroneTelem")) {
+        renderMetricList($("dashDroneTelem"), [
+          ["Serial", droneDev?.serialNumber || "—"],
+          ["Model", droneDev?.modelName || "—"],
+          ["Online", droneDev?.online ? "yes" : "no"],
+          ["Altitude", dronePos?.altitudeM != null ? `${dronePos.altitudeM} m` : "—"],
+          ["GPS", dronePos?.freshness || "—"],
         ]);
-      renderMetricList(
-        $("dashGps"),
-        gpsRows.length ? gpsRows : [["GPS", "No coordinates yet"]],
-      );
-      state.apiSamples.gpsSample = positions.find((p) => p.latitude != null) || positions[0];
+      }
 
-      const onlineRows = state.devices.map((d) => [
-        d.serialNumber.slice(-8),
-        `<span class="pill ${d.online ? "ok" : "bad"}">${d.online ? "online" : "offline"}</span>`,
-      ]);
-      $("dashOnline").innerHTML = onlineRows
-        .map(([k, v]) => `<div class="dash-metric"><span>${k}</span><span>${v}</span></div>`)
-        .join("");
+      if (cardAllowed("dockTelemetry") && $("dashDockTelem")) {
+        renderMetricList($("dashDockTelem"), [
+          ["Serial", dockDev?.serialNumber || "—"],
+          ["Model", dockDev?.modelName || "—"],
+          ["Online", dockDev?.online ? "yes" : "no"],
+          ["Linked drone", state.apiSamples.dockTelemetry?.linkedDroneSerialNumber || "—"],
+          ["GPS", dockPos?.freshness || "—"],
+        ]);
+      }
+
+      if (cardAllowed("batteryStatus") && $("dashBattery")) {
+        const battery = dronePos?.batteryPercent;
+        $("dashBattery").innerHTML = battery != null
+          ? `<div class="dash-kpi"><div class="small">Drone battery</div><div class="v">${battery}%</div></div>`
+          : "<span class='small'>No battery data yet.</span>";
+        state.apiSamples.batterySample = {
+          serial: droneDev?.serialNumber,
+          batteryPercent: battery,
+          online: droneDev?.online,
+        };
+      }
+
+      if (cardAllowed("gpsLocation") && $("dashGps")) {
+        const gpsRows = positions
+          .filter((p) => p.latitude != null && p.longitude != null)
+          .map((p) => [
+            p.serialNumber.slice(-6),
+            `${Number(p.latitude).toFixed(5)}, ${Number(p.longitude).toFixed(5)} (${p.freshness})`,
+          ]);
+        renderMetricList(
+          $("dashGps"),
+          gpsRows.length ? gpsRows : [["GPS", "No coordinates yet"]],
+        );
+        state.apiSamples.gpsSample = positions.find((p) => p.latitude != null) || positions[0];
+      }
+
+      if (cardAllowed("onlineOffline") && $("dashOnline")) {
+        const onlineRows = state.devices.map((d) => [
+          d.serialNumber.slice(-8),
+          `<span class="pill ${d.online ? "ok" : "bad"}">${d.online ? "online" : "offline"}</span>`,
+        ]);
+        $("dashOnline").innerHTML = onlineRows
+          .map(([k, v]) => `<div class="dash-metric"><span>${k}</span><span>${v}</span></div>`)
+          .join("");
+      }
     }
 
     function escapeHtml(text) {
@@ -1571,7 +2051,7 @@
       const dock = primaryDock();
       const fetches = [];
 
-      if (drone) {
+      if (cardAllowed("droneTelemetry") && drone) {
         fetches.push(
           api(`/v1/marafiq/devices/${drone.serialNumber}/telemetry/latest`).then((r) => {
             state.apiSamples.droneTelemetry = r.data;
@@ -1590,7 +2070,7 @@
         );
       }
 
-      if (dock) {
+      if (cardAllowed("dockTelemetry") && dock) {
         fetches.push(
           api(`/v1/marafiq/docks/${dock.serialNumber}`).then((r) => {
             state.apiSamples.dockTelemetry = r.data;
@@ -1607,14 +2087,16 @@
         );
       }
 
-      fetches.push(
-        loadMissionMediaSummary().catch(() => {
-          $("dashMissions").textContent = "Could not load mission media.";
-        }),
-      );
+      if (cardAllowed("missionMediaHistory")) {
+        fetches.push(
+          loadMissionMediaSummary().catch(() => {
+            if ($("dashMissions")) $("dashMissions").textContent = "Could not load mission media.";
+          }),
+        );
+      }
 
       await Promise.all(fetches);
-      if (!opts.skipStreams) {
+      if (!opts.skipStreams && (cardAllowed("liveCamera") || cardAllowed("droneFpv"))) {
         await loadDashStreams();
       }
     }
@@ -1911,10 +2393,21 @@
     }
 
     async function loadEvents() {
+      const needDashAlerts =
+        (isViewer() && cardAllowed("alertsEvents")) ||
+        state.activeTab === "dashboard" ||
+        state.activeTab === "alerts";
+      if (isViewer() && !cardAllowed("alertsEvents") && state.activeTab !== "alerts") {
+        return;
+      }
       const res = await api("/v1/marafiq/events?limit=25");
       state.apiSamples.alertsSample = (res.data || []).slice(0, 2);
-      renderEventsTable(res.data || []);
-      renderDashAlerts(res.data || []);
+      if (!isViewer() || state.activeTab === "alerts") {
+        renderEventsTable(res.data || []);
+      }
+      if (needDashAlerts) {
+        renderDashAlerts(res.data || []);
+      }
     }
 
     function renderEventsTable(events) {
@@ -1987,10 +2480,16 @@
     }
 
     async function refreshDashboard() {
+      if (isViewer()) {
+        await syncSessionFromServer();
+      }
       await loadFleet();
       if (isViewer()) {
+        applyViewerDashboardPermissions();
         await refreshViewerExtras();
-        await loadEvents();
+        if (cardAllowed("alertsEvents")) {
+          await loadEvents();
+        }
         updateLiveBadge(true, new Date());
         return;
       }
@@ -2017,13 +2516,38 @@
       }
     };
 
+    $("adminViewerSelect").onchange = () => {
+      loadAdminViewerSettingsFor($("adminViewerSelect").value).catch((e) => {
+        setAdminSettingsStatus(e.message, "err");
+      });
+    };
+    $("adminSaveViewerSettings").onclick = () => {
+      saveAdminViewerSettings().catch((e) => {
+        setAdminSettingsStatus(e.message, "err");
+      });
+    };
+    $("adminCreateViewer").onclick = () => {
+      createAdminViewer().catch((e) => setAdminViewerStatus(e.message, "err"));
+    };
+    $("adminViewerListBody").onclick = (e) => {
+      const btn = e.target.closest("[data-delete-viewer]");
+      if (!btn) return;
+      deleteAdminViewer(btn.dataset.deleteViewer).catch((err) => setAdminViewerStatus(err.message, "err"));
+    };
+
     loadSession();
     const savedShare = localStorage.getItem("shamalFh2ShareUrl");
     if (savedShare) $("fh2ShareUrl").value = savedShare;
     updateRoleUi();
     if (state.session) {
       startLiveUpdates();
-      refreshDashboard().catch((e) => alert(e.message));
+      if (isViewer()) {
+        syncSessionFromServer()
+          .then(() => refreshDashboard())
+          .catch((e) => alert(e.message));
+      } else {
+        refreshDashboard().catch((e) => alert(e.message));
+      }
     }
   </script>
 </body>

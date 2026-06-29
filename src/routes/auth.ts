@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { login } from "../services/commandCenterAuth.js";
+import { getCcUsers, login } from "../services/commandCenterAuth.js";
+import { getViewerDashboardPermissions } from "../services/viewerDashboardPermissions.js";
 
 const loginSchema = z.object({
   username: z.string().min(2),
@@ -41,11 +42,16 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
             role: session.role,
             displayName: session.displayName,
             sessionToken: session.sessionToken,
+            username: parsed.data.username.trim(),
             permissions: {
               canView: true,
               canOperate: session.role === "operator" || session.role === "admin",
               canAdmin: session.role === "admin",
             },
+            viewerDashboardPermissions:
+              session.role === "viewer"
+                ? getViewerDashboardPermissions(parsed.data.username.trim())
+                : undefined,
           },
           meta: { source: "shamal-platform" },
         });
@@ -55,6 +61,45 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
           message: (err as Error).message,
         });
       }
+    },
+  );
+
+  app.get(
+    "/v1/marafiq/auth/me",
+    {
+      schema: {
+        summary: "Current Shamal Platform session and effective permissions",
+        tags: ["Auth"],
+      },
+    },
+    async (request, reply) => {
+      const username = request.ccUsername;
+      const role = request.ccRole;
+      if (!role || !username) {
+        return reply.status(401).send({
+          error: "unauthorized",
+          message: "Valid session required",
+        });
+      }
+
+      const user = getCcUsers().find((u) => u.username === username);
+      return reply.send({
+        data: {
+          username,
+          role,
+          displayName: user?.displayName ?? username,
+          permissions: {
+            canView: true,
+            canOperate: role === "operator" || role === "admin",
+            canAdmin: role === "admin",
+          },
+          viewerDashboardPermissions:
+            role === "viewer"
+              ? getViewerDashboardPermissions(username)
+              : undefined,
+        },
+        meta: { source: "shamal-platform" },
+      });
     },
   );
 };

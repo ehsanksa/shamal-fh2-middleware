@@ -33,7 +33,12 @@ export function resolveStreamTarget(
   entries: Fh2DeviceEntry[],
   deviceSn: string,
   cameraPref: "drone" | "dock" | "auto" = "auto",
-): { streamSn: string; cameraIndex: string | null; label: string } {
+): {
+  streamSn: string;
+  cameraIndex: string | null;
+  label: string;
+  role: "drone" | "dock";
+} {
   const droneSn = findLinkedDroneSn(entries, deviceSn) ?? deviceSn;
   const dockSn = findLinkedGatewaySn(entries, deviceSn) ?? deviceSn;
 
@@ -42,19 +47,26 @@ export function resolveStreamTarget(
       streamSn: dockSn,
       cameraIndex: findCameraIndex(entries, dockSn),
       label: "dock camera",
+      role: "dock",
     };
   }
 
-  const useDrone =
-    cameraPref === "drone" ||
-    cameraPref === "auto" ||
-    findCameraIndex(entries, droneSn) != null;
-
-  if (useDrone && findCameraIndex(entries, droneSn)) {
+  if (cameraPref === "drone") {
     return {
       streamSn: droneSn,
       cameraIndex: findCameraIndex(entries, droneSn),
+      label: "drone FPV",
+      role: "drone",
+    };
+  }
+
+  const droneCamera = findCameraIndex(entries, droneSn);
+  if (droneCamera) {
+    return {
+      streamSn: droneSn,
+      cameraIndex: droneCamera,
       label: "drone camera",
+      role: "drone",
     };
   }
 
@@ -62,6 +74,7 @@ export function resolveStreamTarget(
     streamSn: dockSn,
     cameraIndex: findCameraIndex(entries, dockSn),
     label: "dock camera",
+    role: "dock",
   };
 }
 

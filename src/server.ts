@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { registerMarafiqAuth } from "./plugins/auth.js";
 import { authRoutes } from "./routes/auth.js";
+import { adminRoutes } from "./routes/admin.js";
 import { capabilitiesRoutes } from "./routes/capabilities.js";
 import { commandCenterRoutes } from "./routes/command-center.js";
 import { deviceRoutes } from "./routes/devices.js";
@@ -64,7 +65,7 @@ export async function buildServer() {
             /^https:\/\/127\.0\.0\.1:\d+$/,
           ]
         : false,
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "X-Api-Key",
       "X-CC-Session",
@@ -118,6 +119,7 @@ export async function buildServer() {
 
   await app.register(commandCenterRoutes);
   await app.register(authRoutes);
+  await app.register(adminRoutes);
   await app.register(healthRoutes);
   await app.register(capabilitiesRoutes);
   await app.register(deviceRoutes);

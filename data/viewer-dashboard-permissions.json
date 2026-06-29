@@ -1,0 +1,16 @@
+{
+  "marafiq1": {
+    "fleetOverview": true,
+    "droneTelemetry": true,
+    "dockTelemetry": false,
+    "batteryStatus": true,
+    "gpsLocation": false,
+    "onlineOffline": false,
+    "liveCamera": false,
+    "droneFpv": true,
+    "alertsEvents": true,
+    "missionMediaHistory": false,
+    "refreshButton": false,
+    "getApiButtons": true
+  }
+}

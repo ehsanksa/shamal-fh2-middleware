@@ -157,14 +157,38 @@ export class LiveFh2Client implements IFh2Client {
   ): Promise<Fh2LiveStreamInfo> {
     const entries = await this.listOrgDevices();
     const cameraPref = opts?.camera ?? "auto";
-    const { streamSn, cameraIndex, label } = resolveStreamTarget(
+    const { streamSn, cameraIndex, label, role } = resolveStreamTarget(
       entries,
       deviceSn,
       cameraPref,
     );
     const online = this.isOnline(entries, streamSn);
 
+    if (cameraPref === "drone" && (!online || !cameraIndex)) {
+      return {
+        deviceSerialNumber: deviceSn,
+        online: online ?? false,
+        streamingSupported: false,
+        liveCapacity: null,
+        cameraIndex,
+        playback: {
+          type: "none",
+          url: null,
+          rtmpUrl: null,
+          webrtcUrl: null,
+          hlsUrl: null,
+          volc: null,
+          embeddable: false,
+          viewerNote: !online
+            ? "Drone offline in FlightHub — no FPV stream. Dock camera is shown separately."
+            : "Drone FPV camera not available. Power on the aircraft or open FlightHub cockpit.",
+        },
+        note: `Drone FPV unavailable (SN ${streamSn}, online=${online ?? false}).`,
+      };
+    }
+
     const shareFallback = (reason: string): Fh2LiveStreamInfo | null => {
+      if (cameraPref === "drone") return null;
       const url = opts?.shareUrl || config.FH2_LIVE_SHARE_URL;
       if (!url) return null;
       return {
@@ -226,7 +250,7 @@ export class LiveFh2Client implements IFh2Client {
                   ? "FlightHub WHEP live stream — WebRTC player in Shamal Platform."
                   : "FlightHub live stream URL from /live-stream/start.",
               },
-          note: `Live stream via OpenAPI (${label}, SN ${streamSn}).`,
+          note: `Live stream via OpenAPI (${label}, SN ${streamSn}, role ${role}).`,
         };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
