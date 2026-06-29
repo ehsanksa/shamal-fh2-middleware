@@ -4,6 +4,8 @@ import type { CcRole } from "./commandCenterAuth.js";
 const VIEWER_GET_PREFIXES = [
   "/v1/marafiq/capabilities",
   "/v1/marafiq/auth/me",
+  "/v1/marafiq/viewer/integration",
+  "/v1/marafiq/viewer/integration/token",
   "/v1/marafiq/devices",
   "/v1/marafiq/fleet/",
   "/v1/marafiq/docks",

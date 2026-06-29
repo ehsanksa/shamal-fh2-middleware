@@ -10,6 +10,7 @@ import { config } from "./config.js";
 import { registerMarafiqAuth } from "./plugins/auth.js";
 import { authRoutes } from "./routes/auth.js";
 import { adminRoutes } from "./routes/admin.js";
+import { viewerIntegrationRoutes } from "./routes/viewerIntegration.js";
 import { capabilitiesRoutes } from "./routes/capabilities.js";
 import { commandCenterRoutes } from "./routes/command-center.js";
 import { deviceRoutes } from "./routes/devices.js";
@@ -120,6 +121,7 @@ export async function buildServer() {
   await app.register(commandCenterRoutes);
   await app.register(authRoutes);
   await app.register(adminRoutes);
+  await app.register(viewerIntegrationRoutes);
   await app.register(healthRoutes);
   await app.register(capabilitiesRoutes);
   await app.register(deviceRoutes);

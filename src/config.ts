@@ -85,6 +85,10 @@ const envSchema = z.object({
     (v) => (v === "" ? undefined : v),
     z.string().optional(),
   ),
+  PUBLIC_API_BASE_URL: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().url().optional(),
+  ),
   FH2_LIVE_SHARE_URL: z.preprocess(
     (v) => (v === "" ? undefined : v),
     z.string().url().optional(),

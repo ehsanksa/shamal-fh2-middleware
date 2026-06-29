@@ -1,0 +1,11 @@
+{
+  "marafiq1": {
+    "enabled": true,
+    "tokenHash": "3ee195b20287449fd8eb0fa20e2f56a151edc6e634d30a18c6e0bcf8baae9b57",
+    "tokenPrefix": "shm_live_6ce5034e",
+    "tokenCiphertext": "BxoTff3qswGhKrNs5nH8sse_3l44kQJ1-77gkhNy2cu8bAZo6Y7bOAyKSyOuUGBmgtBUD6FyVeu4XZSff8XjNe1pNZx_Vlp8V0SJ6Qoh8-rxucGwlA",
+    "status": "active",
+    "generatedAt": "2026-06-29T09:45:03.631Z",
+    "revokedAt": null
+  }
+}

@@ -12,6 +12,10 @@ import {
   type CcRole,
 } from "../services/commandCenterAuth.js";
 import { assertRoleAccess } from "../services/apiAccess.js";
+import {
+  isViewerIntegrationToken,
+  verifyViewerIntegrationToken,
+} from "../services/viewerIntegration.js";
 
 function clientIp(request: FastifyRequest): string {
   const forwarded = request.headers["x-forwarded-for"];
@@ -58,13 +62,45 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
       return;
     }
 
+    const authHeader = request.headers.authorization;
+    const bearerToken =
+      typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7)
+        : undefined;
+
+    const isViewerSessionRoute =
+      path === "/v1/marafiq/viewer/integration" ||
+      path === "/v1/marafiq/viewer/integration/token";
+
+    if (
+      path.startsWith("/v1/marafiq/viewer/") &&
+      !isViewerSessionRoute
+    ) {
+      if (!bearerToken || !isViewerIntegrationToken(bearerToken)) {
+        return reply.status(401).send({
+          error: "unauthorized",
+          message: "Valid viewer integration Bearer token required (shm_live_…)",
+        });
+      }
+
+      const ctx = verifyViewerIntegrationToken(bearerToken);
+      if (!ctx) {
+        return reply.status(401).send({
+          error: "unauthorized",
+          message: "Invalid, revoked, or disabled viewer integration token",
+        });
+      }
+
+      request.viewerIntegration = ctx;
+      return;
+    }
+
     const apiKeyHeader = request.headers["x-api-key"];
     const apiKey =
       typeof apiKeyHeader === "string"
         ? apiKeyHeader
-        : typeof request.headers.authorization === "string" &&
-            request.headers.authorization.startsWith("Bearer ")
-          ? request.headers.authorization.slice(7)
+        : bearerToken && !isViewerIntegrationToken(bearerToken)
+          ? bearerToken
           : undefined;
 
     if (!apiKey || !config.marafiqApiKeys.includes(apiKey)) {

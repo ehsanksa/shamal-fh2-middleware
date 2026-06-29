@@ -186,6 +186,16 @@
     .admin-create-grid .full { grid-column:span 2; }
     .admin-delete-btn { background:#5a2030; border-color:#8a3040; font-size:11px; padding:5px 10px; }
     .admin-section-title { margin:20px 0 8px; font-size:15px; color:#cfe4ff; }
+    .integration-field { margin-bottom:12px; }
+    .integration-field .lbl { font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .integration-field .val { font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#0a1322; border:1px solid #22354f; border-radius:8px; padding:8px 10px; }
+    .integration-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .integration-actions button { font-size:11px; padding:5px 10px; }
+    .integration-scopes { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+    .integration-scopes .pill { font-size:10px; }
+    .integration-example { margin-top:10px; }
+    .integration-example pre { font-size:11px; max-height:140px; overflow:auto; }
+    body.viewer-layout .dash-card#dashIntegrationCard { grid-column:1 / -1; }
     @media(min-width:1100px){
       .dash-grid { grid-template-columns:repeat(4,1fr); }
       .dash-card[data-card="fleet"] { grid-column:span 2; }
@@ -395,6 +405,14 @@
             </div>
             <div class="dash-card-body" id="dashMissions">Loading…</div>
           </div>
+          <div class="dash-card" id="dashIntegrationCard" data-card="integration" style="display:none">
+            <div class="dash-card-head">
+              <span class="dash-card-title">Integration Access</span>
+            </div>
+            <div class="dash-card-body" id="dashIntegrationBody">
+              <p class="small">Loading integration details…</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -581,6 +599,44 @@
             <button id="adminSaveViewerSettings">Save settings</button>
           </div>
           <p id="adminSettingsStatus" class="admin-status"></p>
+
+          <div class="admin-section-title">Viewer Integration Settings</div>
+          <p class="statusline">Enable API access and manage integration tokens for the selected viewer.</p>
+          <div class="admin-settings-card" id="adminIntegrationPanel">
+            <div class="integration-field">
+              <div class="lbl">API Integration</div>
+              <label class="perm-toggle-row" style="border:0;padding:0">
+                <span>Enabled for this viewer</span>
+                <span class="perm-switch">
+                  <input type="checkbox" id="adminIntegrationEnabled" />
+                  <span class="slider"></span>
+                </span>
+              </label>
+            </div>
+            <div class="integration-field">
+              <div class="lbl">Token status</div>
+              <div class="val" id="adminIntegrationStatus">—</div>
+            </div>
+            <div class="integration-field">
+              <div class="lbl">Allowed scopes (from dashboard permissions)</div>
+              <div class="integration-scopes" id="adminIntegrationScopes"></div>
+            </div>
+            <div class="integration-field">
+              <div class="lbl">Last generated</div>
+              <div class="val" id="adminIntegrationGenerated">—</div>
+            </div>
+            <div class="integration-field" id="adminIntegrationKeyWrap" style="display:none">
+              <div class="lbl">API key (shown once — copy now)</div>
+              <div class="val" id="adminIntegrationKeyReveal"></div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <button id="adminIntegrationGenerate">Generate Key</button>
+              <button id="adminIntegrationRegenerate">Regenerate Key</button>
+              <button id="adminIntegrationRevoke" class="admin-delete-btn">Revoke Key</button>
+              <button id="adminIntegrationCopyKey" style="display:none">Copy Key</button>
+            </div>
+            <p id="adminIntegrationStatusMsg" class="admin-status"></p>
+          </div>
         </div>
       </section>
     </div>
@@ -649,6 +705,22 @@
       volcSessions: { dock: null, drone: null },
       volcMod: null,
       adminViewers: [],
+      viewerIntegration: null,
+      adminIntegration: null,
+      adminIntegrationPlainKey: null,
+    };
+
+    const VIEWER_API_ROUTES = {
+      fleet: "/v1/marafiq/viewer/fleet",
+      "drone-telemetry": "/v1/marafiq/viewer/drone-telemetry",
+      "dock-telemetry": "/v1/marafiq/viewer/dock-telemetry",
+      battery: "/v1/marafiq/viewer/battery-status",
+      gps: "/v1/marafiq/viewer/gps-location",
+      online: "/v1/marafiq/viewer/online-status",
+      camera: "/v1/marafiq/viewer/camera",
+      "drone-fpv": "/v1/marafiq/viewer/fpv",
+      alerts: "/v1/marafiq/viewer/alerts-events",
+      missions: "/v1/marafiq/viewer/media-history",
     };
     const LIVE_INTERVAL_MS = 10_000;
     const $ = (id) => document.getElementById(id);
@@ -744,9 +816,29 @@
       return perms ? perms[permissionKey] === true : false;
     }
 
+    function integrationActive() {
+      const i = state.viewerIntegration;
+      return Boolean(i?.enabled && i?.status === "active" && i?.hasToken);
+    }
+
+    function viewerApiBaseUrl() {
+      return state.viewerIntegration?.apiBaseUrl || window.location.origin;
+    }
+
+    function buildViewerCurlExample(path, method = "GET") {
+      const url = `${viewerApiBaseUrl()}${path}`;
+      return `curl -X ${method} "${url}" \\\n  -H "Authorization: Bearer YOUR_API_KEY"`;
+    }
+
+    function buildViewerFetchExample(path) {
+      const url = `${viewerApiBaseUrl()}${path}`;
+      return `fetch("${url}", {\n  headers: {\n    Authorization: "Bearer YOUR_API_KEY"\n  }\n})`;
+    }
+
     function canShowGetApiButtons() {
       if (!isViewer()) return true;
-      return cardAllowed("getApiButtons");
+      if (!cardAllowed("getApiButtons")) return false;
+      return integrationActive();
     }
 
     function applyViewerDashboardPermissions() {
@@ -791,6 +883,113 @@
         state.session.displayName = res.data.displayName;
         saveSession(state.session);
       }
+      applyViewerDashboardPermissions();
+      if (isViewer()) await loadViewerIntegration();
+    }
+
+    function integrationFieldHtml(label, value, copyId) {
+      return `<div class="integration-field">
+        <div class="lbl">${label}</div>
+        <div class="val" id="${copyId || ""}">${escapeHtml(value)}</div>
+        ${copyId ? `<div class="integration-actions"><button type="button" class="integration-copy-btn" data-copy-target="${copyId}">Copy</button></div>` : ""}
+      </div>`;
+    }
+
+    function renderViewerIntegrationCard() {
+      const card = $("dashIntegrationCard");
+      const body = $("dashIntegrationBody");
+      if (!isViewer() || !card || !body) {
+        if (card) card.style.display = "none";
+        return;
+      }
+
+      card.style.display = "";
+      const info = state.viewerIntegration;
+
+      if (!info || !info.enabled) {
+        body.innerHTML = `<p class="small">API integration is not enabled for your account. Please contact Shamal Platform administrator.</p>`;
+        return;
+      }
+
+      const statusClass = info.status === "active" ? "ok" : info.status === "revoked" ? "bad" : "warn";
+      const scopesHtml = (info.scopes || [])
+        .map((s) => `<span class="pill">${escapeHtml(s)}</span>`)
+        .join("") || "<span class='small'>No scopes (dashboard permissions may be empty)</span>";
+
+      const examplePath = VIEWER_API_ROUTES["drone-telemetry"];
+      const curlExample = buildViewerCurlExample(examplePath);
+      const fetchExample = buildViewerFetchExample(examplePath);
+
+      body.innerHTML = `
+        <p class="small" style="margin:0 0 12px">Use these credentials to connect your system with Shamal Platform APIs.</p>
+        ${integrationFieldHtml("API Base URL", info.apiBaseUrl, "intCopyBaseUrl")}
+        ${integrationFieldHtml("Client ID / Viewer ID", info.viewerId, "intCopyViewerId")}
+        <div class="integration-field">
+          <div class="lbl">API Key / Integration Token</div>
+          <div class="val" id="intCopyApiKey">${escapeHtml(info.tokenMasked || "••••••••••••••••")}</div>
+          <div class="integration-actions">
+            <button type="button" id="intCopyApiKeyBtn">Copy API Key</button>
+          </div>
+        </div>
+        ${integrationFieldHtml("Webhook URL", info.webhookUrl, "intCopyWebhook")}
+        <div class="integration-field">
+          <div class="lbl">Allowed API Scopes</div>
+          <div class="integration-scopes">${scopesHtml}</div>
+        </div>
+        <div class="integration-field">
+          <div class="lbl">Token status</div>
+          <div><span class="pill ${statusClass}">${escapeHtml((info.status || "none").toUpperCase())}</span></div>
+        </div>
+        <div class="integration-field">
+          <div class="lbl">Last generated</div>
+          <div class="val">${info.generatedAt ? escapeHtml(new Date(info.generatedAt).toLocaleString()) : "—"}</div>
+        </div>
+        <details class="integration-example">
+          <summary class="small" style="cursor:pointer;color:#9fd0ff">Example API request</summary>
+          <pre id="intCurlExample">${escapeHtml(curlExample)}</pre>
+          <div class="integration-actions">
+            <button type="button" id="intCopyCurlBtn">Copy Example</button>
+          </div>
+          <pre class="small" style="margin-top:8px">${escapeHtml(fetchExample)}</pre>
+        </details>`;
+
+      body.querySelectorAll(".integration-copy-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const el = $(btn.dataset.copyTarget);
+          if (el) copyText(el.textContent);
+        };
+      });
+      $("intCopyApiKeyBtn").onclick = () => copyViewerApiKey();
+      $("intCopyCurlBtn").onclick = () => copyText(curlExample);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showApiToast();
+      } catch (e) {
+        alert("Could not copy: " + e.message);
+      }
+    }
+
+    async function copyViewerApiKey() {
+      try {
+        const res = await api("/v1/marafiq/viewer/integration/token");
+        await copyText(res.data.apiKey);
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function loadViewerIntegration() {
+      if (!isViewer()) return;
+      try {
+        const res = await api("/v1/marafiq/viewer/integration");
+        state.viewerIntegration = res.data;
+      } catch {
+        state.viewerIntegration = null;
+      }
+      renderViewerIntegrationCard();
       applyViewerDashboardPermissions();
     }
 
@@ -892,6 +1091,93 @@
       const res = await api(`/v1/marafiq/admin/viewer-settings/${encodeURIComponent(viewerId)}`);
       fillAdminPermissionForm(res.data.permissions);
       setAdminSettingsStatus("");
+      await loadAdminIntegrationSettings(viewerId);
+    }
+
+    function setAdminIntegrationStatusMsg(message, type = "") {
+      const el = $("adminIntegrationStatusMsg");
+      el.textContent = message;
+      el.className = "admin-status" + (type ? ` ${type}` : "");
+    }
+
+    function renderAdminIntegrationPanel(data) {
+      state.adminIntegration = data;
+      $("adminIntegrationEnabled").checked = data.enabled === true;
+      $("adminIntegrationStatus").textContent = (data.status || "none").toUpperCase();
+      $("adminIntegrationGenerated").textContent = data.generatedAt
+        ? new Date(data.generatedAt).toLocaleString()
+        : "—";
+      const scopesEl = $("adminIntegrationScopes");
+      scopesEl.innerHTML = (data.scopes || [])
+        .map((s) => `<span class="pill">${escapeHtml(s)}</span>`)
+        .join("") || "<span class='small'>No scopes</span>";
+
+      if (state.adminIntegrationPlainKey) {
+        $("adminIntegrationKeyWrap").style.display = "";
+        $("adminIntegrationKeyReveal").textContent = state.adminIntegrationPlainKey;
+        $("adminIntegrationCopyKey").style.display = "";
+      } else {
+        $("adminIntegrationKeyWrap").style.display = "none";
+        $("adminIntegrationCopyKey").style.display = "none";
+      }
+    }
+
+    async function loadAdminIntegrationSettings(viewerId) {
+      if (!viewerId || !isAdmin()) return;
+      state.adminIntegrationPlainKey = null;
+      try {
+        const res = await api(`/v1/marafiq/admin/viewers/${encodeURIComponent(viewerId)}/integration`);
+        renderAdminIntegrationPanel(res.data);
+        setAdminIntegrationStatusMsg("");
+      } catch (e) {
+        setAdminIntegrationStatusMsg(e.message, "err");
+      }
+    }
+
+    async function saveAdminIntegrationEnabled() {
+      const viewerId = $("adminViewerSelect").value;
+      if (!viewerId) return;
+      setAdminIntegrationStatusMsg("Saving…");
+      try {
+        const res = await api(`/v1/marafiq/admin/viewers/${encodeURIComponent(viewerId)}/integration`, {
+          method: "PATCH",
+          body: JSON.stringify({ enabled: $("adminIntegrationEnabled").checked }),
+        });
+        renderAdminIntegrationPanel(res.data);
+        setAdminIntegrationStatusMsg("Integration setting saved.", "ok");
+      } catch (e) {
+        setAdminIntegrationStatusMsg(e.message, "err");
+      }
+    }
+
+    async function adminIntegrationAction(action) {
+      const viewerId = $("adminViewerSelect").value;
+      if (!viewerId) return;
+      if (action === "regenerate" && !confirm("Regenerate API key? The previous key will stop working immediately.")) return;
+      if (action === "revoke" && !confirm("Revoke API key? The viewer integration will stop working until a new key is generated.")) return;
+
+      setAdminIntegrationStatusMsg("Working…");
+      try {
+        const path =
+          action === "generate"
+            ? "generate"
+            : action === "regenerate"
+              ? "regenerate"
+              : "revoke";
+        const res = await api(
+          `/v1/marafiq/admin/viewers/${encodeURIComponent(viewerId)}/integration/${path}`,
+          { method: "POST", body: "{}" },
+        );
+        state.adminIntegrationPlainKey = res.data.apiKey || null;
+        renderAdminIntegrationPanel(res.data);
+        const msg =
+          action === "revoke"
+            ? "API key revoked."
+            : "API key generated. Copy it now — it will not be shown again in full.";
+        setAdminIntegrationStatusMsg(msg, "ok");
+      } catch (e) {
+        setAdminIntegrationStatusMsg(e.message, "err");
+      }
     }
 
     async function saveAdminViewerSettings() {
@@ -905,6 +1191,7 @@
         );
         fillAdminPermissionForm(res.data.permissions);
         setAdminSettingsStatus("Settings saved successfully.", "ok");
+        await loadAdminIntegrationSettings(viewerId);
       } catch (e) {
         setAdminSettingsStatus(e.message, "err");
       }
@@ -978,6 +1265,11 @@
     }
 
     function getApiCopyText(cardKey) {
+      if (isViewer() && integrationActive()) {
+        const path = VIEWER_API_ROUTES[cardKey];
+        if (path) return buildViewerCurlExample(path);
+      }
+
       const drone = primaryDrone();
       const dock = primaryDock();
       const ds = drone?.serialNumber || "{droneSerial}";
@@ -2533,6 +2825,21 @@
       const btn = e.target.closest("[data-delete-viewer]");
       if (!btn) return;
       deleteAdminViewer(btn.dataset.deleteViewer).catch((err) => setAdminViewerStatus(err.message, "err"));
+    };
+    $("adminIntegrationEnabled").onchange = () => {
+      saveAdminIntegrationEnabled().catch((e) => setAdminIntegrationStatusMsg(e.message, "err"));
+    };
+    $("adminIntegrationGenerate").onclick = () => {
+      adminIntegrationAction("generate").catch((e) => setAdminIntegrationStatusMsg(e.message, "err"));
+    };
+    $("adminIntegrationRegenerate").onclick = () => {
+      adminIntegrationAction("regenerate").catch((e) => setAdminIntegrationStatusMsg(e.message, "err"));
+    };
+    $("adminIntegrationRevoke").onclick = () => {
+      adminIntegrationAction("revoke").catch((e) => setAdminIntegrationStatusMsg(e.message, "err"));
+    };
+    $("adminIntegrationCopyKey").onclick = () => {
+      if (state.adminIntegrationPlainKey) copyText(state.adminIntegrationPlainKey);
     };
 
     loadSession();
