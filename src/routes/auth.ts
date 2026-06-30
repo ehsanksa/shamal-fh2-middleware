@@ -13,7 +13,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     "/v1/marafiq/auth/login",
     {
       schema: {
-        summary: "Shamal Platform login (viewer/operator/admin)",
+        summary: "Shamal Platform login",
         tags: ["Auth"],
         security: [],
       },

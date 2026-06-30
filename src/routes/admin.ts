@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { readCcCredentialEnv } from "../config.js";
 import {
@@ -59,12 +59,12 @@ function requireAdmin(
   return { ok: true };
 }
 
-function listViewerAccounts() {
+function listIntegrationAccounts() {
   const envNames = getEnvViewerUsernames();
   return getCcUsers()
     .filter((u) => u.role === "viewer")
     .map((u) => ({
-      viewerId: u.username,
+      accountId: u.username,
       displayName: u.displayName,
       source: isManagedViewer(u.username)
         ? ("admin" as const)
@@ -76,12 +76,31 @@ function listViewerAccounts() {
     }));
 }
 
-export const adminRoutes: FastifyPluginAsync = async (app) => {
+/** @deprecated Legacy shape for backward-compat admin routes */
+function listViewerAccountsLegacy() {
+  return listIntegrationAccounts().map((a) => ({
+    viewerId: a.accountId,
+    displayName: a.displayName,
+    source: a.source,
+    deletable: a.deletable,
+    permissions: a.permissions,
+  }));
+}
+
+function findAccount(accountId: string) {
+  return listIntegrationAccounts().find((a) => a.accountId === accountId);
+}
+
+function apiBaseFromRequest(request: { headers: { host?: string } }): string {
+  return resolveApiBaseUrl(request.headers.host);
+}
+
+function registerIntegrationAccountRoutes(app: FastifyInstance): void {
   app.get(
-    "/v1/marafiq/admin/viewers",
+    "/v1/marafiq/admin/integration-accounts",
     {
       schema: {
-        summary: "List viewer accounts and their dashboard permissions (admin only)",
+        summary: "List integration accounts and dashboard access (admin only)",
         tags: ["Admin"],
       },
     },
@@ -90,19 +109,18 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       return reply.send({
-        data: listViewerAccounts(),
+        data: listIntegrationAccounts(),
         meta: { source: "shamal-platform" },
       });
     },
   );
 
   app.post(
-    "/v1/marafiq/admin/viewers",
+    "/v1/marafiq/admin/integration-accounts",
     {
       schema: {
-        summary: "Create a viewer account (admin only)",
+        summary: "Create an integration account (admin only)",
         tags: ["Admin"],
       },
     },
@@ -144,6 +162,370 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
         });
         return reply.status(201).send({
           data: {
+            accountId: record.username,
+            displayName: record.displayName,
+            source: "admin" as const,
+            deletable: true,
+            permissions: mergeViewerPermissions(null),
+          },
+          meta: { source: "shamal-platform" },
+        });
+      } catch (err) {
+        return reply.status(400).send({
+          error: "validation_error",
+          message: (err as Error).message,
+        });
+      }
+    },
+  );
+
+  app.delete(
+    "/v1/marafiq/admin/integration-accounts/:accountId",
+    {
+      schema: {
+        summary: "Delete an admin-managed integration account (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+
+      if (!isManagedViewer(accountId)) {
+        return reply.status(400).send({
+          error: "not_deletable",
+          message:
+            `Account "${accountId}" is configured in .env and cannot be deleted here. Remove it from the server environment instead.`,
+        });
+      }
+
+      try {
+        deleteManagedViewer(accountId);
+        deleteViewerDashboardPermissions(accountId);
+        deleteViewerIntegration(accountId);
+        return reply.send({
+          data: { accountId, deleted: true },
+          meta: { source: "shamal-platform" },
+        });
+      } catch (err) {
+        const message = (err as Error).message;
+        if (message.includes("not found")) {
+          return reply.status(404).send({ error: "not_found", message });
+        }
+        return reply.status(400).send({ error: "validation_error", message });
+      }
+    },
+  );
+
+  app.get(
+    "/v1/marafiq/admin/integration-accounts/:accountId/access",
+    {
+      schema: {
+        summary: "Read dashboard access settings (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      const account = findAccount(accountId);
+      if (!account) {
+        return reply.status(404).send({
+          error: "not_found",
+          message: `Integration account "${accountId}" was not found.`,
+        });
+      }
+
+      return reply.send({
+        data: {
+          accountId,
+          displayName: account.displayName,
+          permissions: getViewerDashboardPermissions(accountId),
+        },
+        meta: { source: "shamal-platform" },
+      });
+    },
+  );
+
+  app.patch(
+    "/v1/marafiq/admin/integration-accounts/:accountId/access",
+    {
+      schema: {
+        summary: "Update dashboard access settings (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      const parsed = patchSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "validation_error",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      try {
+        const permissions = updateViewerDashboardPermissions(accountId, parsed.data);
+        const account = findAccount(accountId)!;
+        return reply.send({
+          data: {
+            accountId,
+            displayName: account.displayName,
+            permissions,
+          },
+          meta: { source: "shamal-platform" },
+        });
+      } catch (err) {
+        const message = (err as Error).message;
+        if (message.startsWith("Unknown viewer")) {
+          return reply.status(404).send({ error: "not_found", message });
+        }
+        return reply.status(400).send({ error: "validation_error", message });
+      }
+    },
+  );
+
+  app.get(
+    "/v1/marafiq/admin/integration-accounts/:accountId/key",
+    {
+      schema: {
+        summary: "Read integration key settings (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      if (!findAccount(accountId)) {
+        return reply.status(404).send({
+          error: "not_found",
+          message: `Integration account "${accountId}" was not found.`,
+        });
+      }
+
+      return reply.send({
+        data: getAdminIntegrationView(accountId, apiBaseFromRequest(request)),
+        meta: { source: "shamal-platform" },
+      });
+    },
+  );
+
+  app.patch(
+    "/v1/marafiq/admin/integration-accounts/:accountId/key",
+    {
+      schema: {
+        summary: "Enable/disable integration API access (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      const parsed = integrationPatchSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "validation_error",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      try {
+        setViewerIntegrationEnabled(accountId, parsed.data.enabled);
+        return reply.send({
+          data: getAdminIntegrationView(accountId, apiBaseFromRequest(request)),
+          meta: { source: "shamal-platform" },
+        });
+      } catch (err) {
+        const message = (err as Error).message;
+        if (message.startsWith("Unknown viewer")) {
+          return reply.status(404).send({ error: "not_found", message });
+        }
+        return reply.status(400).send({ error: "validation_error", message });
+      }
+    },
+  );
+
+  app.post(
+    "/v1/marafiq/admin/integration-accounts/:accountId/key/generate",
+    {
+      schema: {
+        summary: "Generate integration access key (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      try {
+        const { token } = generateViewerIntegrationToken(accountId);
+        return reply.send({
+          data: {
+            ...getAdminIntegrationView(accountId, apiBaseFromRequest(request)),
+            accessKey: token,
+          },
+          meta: {
+            source: "shamal-platform",
+            note: "Store this access key securely. It is shown in full only once.",
+          },
+        });
+      } catch (err) {
+        const message = (err as Error).message;
+        if (message.startsWith("Unknown viewer")) {
+          return reply.status(404).send({ error: "not_found", message });
+        }
+        return reply.status(400).send({ error: "validation_error", message });
+      }
+    },
+  );
+
+  app.post(
+    "/v1/marafiq/admin/integration-accounts/:accountId/key/regenerate",
+    {
+      schema: {
+        summary: "Regenerate integration access key (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      try {
+        const { token } = regenerateViewerIntegrationToken(accountId);
+        return reply.send({
+          data: {
+            ...getAdminIntegrationView(accountId, apiBaseFromRequest(request)),
+            accessKey: token,
+          },
+          meta: {
+            source: "shamal-platform",
+            note: "Previous access key is now invalid. Store this key securely.",
+          },
+        });
+      } catch (err) {
+        const message = (err as Error).message;
+        if (message.startsWith("Unknown viewer")) {
+          return reply.status(404).send({ error: "not_found", message });
+        }
+        return reply.status(400).send({ error: "validation_error", message });
+      }
+    },
+  );
+
+  app.post(
+    "/v1/marafiq/admin/integration-accounts/:accountId/key/revoke",
+    {
+      schema: {
+        summary: "Revoke integration access key (admin only)",
+        tags: ["Admin"],
+      },
+    },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+
+      const { accountId } = request.params as { accountId: string };
+      try {
+        revokeViewerIntegrationToken(accountId);
+        return reply.send({
+          data: getAdminIntegrationView(accountId, apiBaseFromRequest(request)),
+          meta: { source: "shamal-platform" },
+        });
+      } catch (err) {
+        const message = (err as Error).message;
+        if (message.startsWith("Unknown viewer")) {
+          return reply.status(404).send({ error: "not_found", message });
+        }
+        return reply.status(400).send({ error: "validation_error", message });
+      }
+    },
+  );
+}
+
+export const adminRoutes: FastifyPluginAsync = async (app) => {
+  registerIntegrationAccountRoutes(app);
+
+  // @deprecated backward-compat admin routes
+  app.get(
+    "/v1/marafiq/admin/viewers",
+    { schema: { hide: true } },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+      return reply.send({
+        data: listViewerAccountsLegacy(),
+        meta: { source: "shamal-platform" },
+      });
+    },
+  );
+
+  app.post(
+    "/v1/marafiq/admin/viewers",
+    { schema: { hide: true } },
+    async (request, reply) => {
+      const gate = requireAdmin(request.ccRole);
+      if (!gate.ok) {
+        return reply.status(403).send({ error: "forbidden", message: gate.message });
+      }
+      const parsed = createViewerSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "validation_error",
+          details: parsed.error.flatten(),
+        });
+      }
+      const apiKeys = readCcCredentialEnv().marafiqApiKeys;
+      const apiKey = parsed.data.apiKey?.trim() || apiKeys[0];
+      if (!apiKey || !apiKeys.includes(apiKey)) {
+        return reply.status(400).send({
+          error: "validation_error",
+          message: `apiKey must be one of the configured MARAFIQ_API_KEYS values`,
+        });
+      }
+      const taken = getCcUsers().some((u) => u.username === parsed.data.username);
+      if (taken) {
+        return reply.status(409).send({
+          error: "conflict",
+          message: `Username "${parsed.data.username}" is already in use`,
+        });
+      }
+      try {
+        const record = createManagedViewer({ ...parsed.data, apiKey });
+        return reply.status(201).send({
+          data: {
             viewerId: record.username,
             displayName: record.displayName,
             source: "admin" as const,
@@ -163,28 +545,20 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.delete(
     "/v1/marafiq/admin/viewers/:viewerId",
-    {
-      schema: {
-        summary: "Delete an admin-managed viewer account (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
-
       if (!isManagedViewer(viewerId)) {
         return reply.status(400).send({
           error: "not_deletable",
           message:
-            `Viewer "${viewerId}" is configured in .env and cannot be deleted here. Remove it from the server environment instead.`,
+            `Account "${viewerId}" is configured in .env and cannot be deleted here.`,
         });
       }
-
       try {
         deleteManagedViewer(viewerId);
         deleteViewerDashboardPermissions(viewerId);
@@ -205,33 +579,25 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.get(
     "/v1/marafiq/admin/viewer-settings/:viewerId",
-    {
-      schema: {
-        summary: "Read viewer dashboard permissions (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
-      const permissions = getViewerDashboardPermissions(viewerId);
-      const viewer = listViewerAccounts().find((v) => v.viewerId === viewerId);
-      if (!viewer) {
+      const account = findAccount(viewerId);
+      if (!account) {
         return reply.status(404).send({
           error: "not_found",
-          message: `Viewer account "${viewerId}" was not found.`,
+          message: `Integration account "${viewerId}" was not found.`,
         });
       }
-
       return reply.send({
         data: {
           viewerId,
-          displayName: viewer.displayName,
-          permissions,
+          displayName: account.displayName,
+          permissions: getViewerDashboardPermissions(viewerId),
         },
         meta: { source: "shamal-platform" },
       });
@@ -240,18 +606,12 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.patch(
     "/v1/marafiq/admin/viewer-settings/:viewerId",
-    {
-      schema: {
-        summary: "Update viewer dashboard permissions (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
       const parsed = patchSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -260,14 +620,13 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
           details: parsed.error.flatten(),
         });
       }
-
       try {
         const permissions = updateViewerDashboardPermissions(viewerId, parsed.data);
-        const viewer = listViewerAccounts().find((v) => v.viewerId === viewerId)!;
+        const account = findAccount(viewerId)!;
         return reply.send({
           data: {
             viewerId,
-            displayName: viewer.displayName,
+            displayName: account.displayName,
             permissions,
           },
           meta: { source: "shamal-platform" },
@@ -284,30 +643,22 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.get(
     "/v1/marafiq/admin/viewers/:viewerId/integration",
-    {
-      schema: {
-        summary: "Read viewer API integration settings (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
-      const viewer = listViewerAccounts().find((v) => v.viewerId === viewerId);
-      if (!viewer) {
+      if (!findAccount(viewerId)) {
         return reply.status(404).send({
           error: "not_found",
-          message: `Viewer account "${viewerId}" was not found.`,
+          message: `Integration account "${viewerId}" was not found.`,
         });
       }
-
-      const host = request.headers.host;
+      const view = getAdminIntegrationView(viewerId, apiBaseFromRequest(request));
       return reply.send({
-        data: getAdminIntegrationView(viewerId, resolveApiBaseUrl(host)),
+        data: { ...view, viewerId, scopes: undefined },
         meta: { source: "shamal-platform" },
       });
     },
@@ -315,18 +666,12 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.patch(
     "/v1/marafiq/admin/viewers/:viewerId/integration",
-    {
-      schema: {
-        summary: "Enable/disable viewer API integration (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
       const parsed = integrationPatchSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -335,12 +680,10 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
           details: parsed.error.flatten(),
         });
       }
-
       try {
         setViewerIntegrationEnabled(viewerId, parsed.data.enabled);
-        const host = request.headers.host;
         return reply.send({
-          data: getAdminIntegrationView(viewerId, resolveApiBaseUrl(host)),
+          data: getAdminIntegrationView(viewerId, apiBaseFromRequest(request)),
           meta: { source: "shamal-platform" },
         });
       } catch (err) {
@@ -355,31 +698,22 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     "/v1/marafiq/admin/viewers/:viewerId/integration/generate",
-    {
-      schema: {
-        summary: "Generate viewer API integration token (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
       try {
         const { token } = generateViewerIntegrationToken(viewerId);
-        const host = request.headers.host;
         return reply.send({
           data: {
-            ...getAdminIntegrationView(viewerId, resolveApiBaseUrl(host)),
+            ...getAdminIntegrationView(viewerId, apiBaseFromRequest(request)),
             apiKey: token,
+            accessKey: token,
           },
-          meta: {
-            source: "shamal-platform",
-            note: "Store this API key securely. It is shown in full only once.",
-          },
+          meta: { source: "shamal-platform" },
         });
       } catch (err) {
         const message = (err as Error).message;
@@ -393,31 +727,22 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     "/v1/marafiq/admin/viewers/:viewerId/integration/regenerate",
-    {
-      schema: {
-        summary: "Regenerate viewer API integration token (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
       try {
         const { token } = regenerateViewerIntegrationToken(viewerId);
-        const host = request.headers.host;
         return reply.send({
           data: {
-            ...getAdminIntegrationView(viewerId, resolveApiBaseUrl(host)),
+            ...getAdminIntegrationView(viewerId, apiBaseFromRequest(request)),
             apiKey: token,
+            accessKey: token,
           },
-          meta: {
-            source: "shamal-platform",
-            note: "Previous token is now invalid. Store this API key securely.",
-          },
+          meta: { source: "shamal-platform" },
         });
       } catch (err) {
         const message = (err as Error).message;
@@ -431,24 +756,17 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     "/v1/marafiq/admin/viewers/:viewerId/integration/revoke",
-    {
-      schema: {
-        summary: "Revoke viewer API integration token (admin only)",
-        tags: ["Admin"],
-      },
-    },
+    { schema: { hide: true } },
     async (request, reply) => {
       const gate = requireAdmin(request.ccRole);
       if (!gate.ok) {
         return reply.status(403).send({ error: "forbidden", message: gate.message });
       }
-
       const { viewerId } = request.params as { viewerId: string };
       try {
         revokeViewerIntegrationToken(viewerId);
-        const host = request.headers.host;
         return reply.send({
-          data: getAdminIntegrationView(viewerId, resolveApiBaseUrl(host)),
+          data: getAdminIntegrationView(viewerId, apiBaseFromRequest(request)),
           meta: { source: "shamal-platform" },
         });
       } catch (err) {

@@ -17,6 +17,7 @@ import {
 } from "./viewerDashboardPermissions.js";
 import {
   deriveViewerScopes,
+  enabledDataAccessLabels,
   type ViewerApiScope,
 } from "./viewerScopes.js";
 
@@ -160,23 +161,23 @@ export function getViewerIntegrationPublic(
 ): {
   enabled: boolean;
   apiBaseUrl: string;
-  viewerId: string;
+  accountId: string;
   tokenMasked: string;
   webhookUrl: string;
-  scopes: ViewerApiScope[];
+  accessNote: string;
   generatedAt: string | null;
   status: IntegrationStatus;
   hasToken: boolean;
 } {
   const record = getViewerIntegration(viewerId);
-  const scopes = getEffectiveScopes(viewerId);
   return {
     enabled: record.enabled,
     apiBaseUrl,
-    viewerId,
+    accountId: viewerId,
     tokenMasked: maskToken(record.tokenPrefix),
     webhookUrl: buildViewerWebhookUrl(apiBaseUrl, viewerId),
-    scopes,
+    accessNote:
+      "Your integration access follows the data access configured for your account.",
     generatedAt: record.generatedAt,
     status: record.status,
     hasToken: Boolean(record.tokenHash && record.status === "active"),
@@ -306,10 +307,11 @@ export function getAdminIntegrationView(
   viewerId: string,
   apiBaseUrl: string,
 ): ReturnType<typeof getViewerIntegrationPublic> & {
-  permissions: ViewerDashboardPermissions;
+  enabledDataAccess: string[];
 } {
+  const permissions = getViewerDashboardPermissions(viewerId);
   return {
     ...getViewerIntegrationPublic(viewerId, apiBaseUrl),
-    permissions: getViewerDashboardPermissions(viewerId),
+    enabledDataAccess: enabledDataAccessLabels(permissions),
   };
 }

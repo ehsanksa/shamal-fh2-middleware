@@ -68,18 +68,22 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
         ? authHeader.slice(7)
         : undefined;
 
-    const isViewerSessionRoute =
+    const isIntegrationSessionRoute =
+      path === "/v1/marafiq/integration/profile" ||
+      path === "/v1/marafiq/integration/access-key" ||
+      // @deprecated backward-compat aliases
       path === "/v1/marafiq/viewer/integration" ||
       path === "/v1/marafiq/viewer/integration/token";
 
-    if (
-      path.startsWith("/v1/marafiq/viewer/") &&
-      !isViewerSessionRoute
-    ) {
+    const isIntegrationBearerRoute =
+      (path.startsWith("/v1/marafiq/integration/") && !isIntegrationSessionRoute) ||
+      (path.startsWith("/v1/marafiq/viewer/") && !isIntegrationSessionRoute);
+
+    if (isIntegrationBearerRoute) {
       if (!bearerToken || !isViewerIntegrationToken(bearerToken)) {
         return reply.status(401).send({
           error: "unauthorized",
-          message: "Valid viewer integration Bearer token required (shm_live_…)",
+          message: "Valid integration Bearer access key required (shm_live_…)",
         });
       }
 
@@ -87,7 +91,7 @@ export async function registerMarafiqAuth(app: FastifyInstance): Promise<void> {
       if (!ctx) {
         return reply.status(401).send({
           error: "unauthorized",
-          message: "Invalid, revoked, or disabled viewer integration token",
+          message: "Invalid, revoked, or disabled integration access key",
         });
       }
 

@@ -4,6 +4,9 @@ import type { CcRole } from "./commandCenterAuth.js";
 const VIEWER_GET_PREFIXES = [
   "/v1/marafiq/capabilities",
   "/v1/marafiq/auth/me",
+  "/v1/marafiq/integration/profile",
+  "/v1/marafiq/integration/access-key",
+  // @deprecated backward-compat aliases
   "/v1/marafiq/viewer/integration",
   "/v1/marafiq/viewer/integration/token",
   "/v1/marafiq/devices",
@@ -33,7 +36,7 @@ export function assertRoleAccess(
       return {
         allowed: false,
         requiredRole: "admin",
-        message: "Admin role required for viewer settings.",
+        message: "Admin role required for integration account settings.",
       };
     }
     return { allowed: true };
@@ -45,7 +48,7 @@ export function assertRoleAccess(
         allowed: false,
         requiredRole: "operator",
         message:
-          'Role "viewer" is read-only. This endpoint requires operator or admin access.',
+          "This account is read-only. This endpoint requires operator or admin access.",
       };
     }
     if (!isViewerReadOnlyAllowed(method, path)) {
@@ -53,7 +56,7 @@ export function assertRoleAccess(
         allowed: false,
         requiredRole: "operator",
         message:
-          'Role "viewer" is read-only. This endpoint requires operator or admin access.',
+          "This account is read-only. This endpoint requires operator or admin access.",
       };
     }
     return { allowed: true };

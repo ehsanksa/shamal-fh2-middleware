@@ -6,7 +6,7 @@ import {
 } from "../services/viewerIntegration.js";
 import {
   hasViewerScope,
-  scopeForViewerPath,
+  scopeForIntegrationPath,
   type ViewerApiScope,
 } from "../services/viewerScopes.js";
 import {
@@ -26,7 +26,7 @@ function apiBaseFromRequest(request: FastifyRequest): string {
   return resolveApiBaseUrl(host);
 }
 
-function requireViewerIntegration(
+function requireIntegrationAuth(
   request: FastifyRequest,
   reply: FastifyReply,
   requiredScope: ViewerApiScope,
@@ -35,175 +35,222 @@ function requireViewerIntegration(
   if (!ctx) {
     reply.status(401).send({
       error: "unauthorized",
-      message: "Valid viewer integration Bearer token required",
+      message: "Valid integration Bearer access key required",
     });
     return false;
   }
   if (!hasViewerScope(ctx.scopes, requiredScope)) {
     reply.status(403).send({
       error: "forbidden",
-      message: `Missing required scope: ${requiredScope}`,
-      requiredScope,
+      message: "Access to this data is not enabled for your account.",
     });
     return false;
   }
   return true;
 }
 
-function scopedHandler(
-  path: string,
-  handler: () => Promise<unknown>,
-) {
+type DataHandler = () => Promise<unknown>;
+
+function scopedHandler(path: string, handler: DataHandler) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const scope = scopeForViewerPath(path);
-    if (!scope || !requireViewerIntegration(request, reply, scope)) return;
+    const scope = scopeForIntegrationPath(path);
+    if (!scope || !requireIntegrationAuth(request, reply, scope)) return;
     const payload = await handler();
     return reply.send(payload);
   };
 }
 
+function registerDataRoute(
+  app: Parameters<FastifyPluginAsync>[0],
+  publicPath: string,
+  deprecatedPath: string,
+  summary: string,
+  handler: DataHandler,
+) {
+  const routeHandler = scopedHandler(publicPath, handler);
+  const schema = { summary, tags: ["Integration"] as const };
+
+  app.get(publicPath, { schema }, routeHandler);
+  // @deprecated — backward-compat alias; do not document or show in UI
+  app.get(deprecatedPath, { schema: { ...schema, hide: true } }, routeHandler);
+}
+
+async function integrationProfileHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  if (request.ccRole !== "viewer" || !request.ccUsername) {
+    return reply.status(403).send({
+      error: "forbidden",
+      message: "Integration account session required",
+    });
+  }
+
+  const apiBaseUrl = apiBaseFromRequest(request);
+  const info = getViewerIntegrationPublic(request.ccUsername, apiBaseUrl);
+  return reply.send({ data: info, meta: { source: "shamal-platform" } });
+}
+
+async function integrationAccessKeyHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  if (request.ccRole !== "viewer" || !request.ccUsername) {
+    return reply.status(403).send({
+      error: "forbidden",
+      message: "Integration account session required",
+    });
+  }
+
+  const token = revealViewerToken(request.ccUsername);
+  if (!token) {
+    return reply.status(404).send({
+      error: "not_available",
+      message:
+        "API integration is not enabled or no active access key exists for your account.",
+    });
+  }
+
+  return reply.send({
+    data: { accessKey: token },
+    meta: { source: "shamal-platform" },
+  });
+}
+
 export const viewerIntegrationRoutes: FastifyPluginAsync = async (app) => {
   app.get(
-    "/v1/marafiq/viewer/integration",
+    "/v1/marafiq/integration/profile",
     {
       schema: {
-        summary: "Viewer integration access details (session auth)",
-        tags: ["Viewer Integration"],
+        summary: "Integration account access details (session auth)",
+        tags: ["Integration"],
       },
     },
-    async (request, reply) => {
-      if (request.ccRole !== "viewer" || !request.ccUsername) {
-        return reply.status(403).send({
-          error: "forbidden",
-          message: "Viewer session required",
-        });
-      }
-
-      const apiBaseUrl = apiBaseFromRequest(request);
-      const info = getViewerIntegrationPublic(request.ccUsername, apiBaseUrl);
-      return reply.send({ data: info, meta: { source: "shamal-platform" } });
-    },
+    integrationProfileHandler,
+  );
+  // @deprecated — backward-compat alias
+  app.get(
+    "/v1/marafiq/viewer/integration",
+    { schema: { hide: true } },
+    integrationProfileHandler,
   );
 
   app.get(
-    "/v1/marafiq/viewer/integration/token",
+    "/v1/marafiq/integration/access-key",
     {
       schema: {
-        summary: "Reveal viewer API key for clipboard copy (session auth)",
-        tags: ["Viewer Integration"],
+        summary: "Reveal integration access key for clipboard copy (session auth)",
+        tags: ["Integration"],
       },
     },
+    integrationAccessKeyHandler,
+  );
+  // @deprecated — backward-compat alias; returns apiKey field for legacy clients
+  app.get(
+    "/v1/marafiq/viewer/integration/token",
+    { schema: { hide: true } },
     async (request, reply) => {
       if (request.ccRole !== "viewer" || !request.ccUsername) {
         return reply.status(403).send({
           error: "forbidden",
-          message: "Viewer session required",
+          message: "Integration account session required",
         });
       }
-
       const token = revealViewerToken(request.ccUsername);
       if (!token) {
         return reply.status(404).send({
           error: "not_available",
           message:
-            "API integration is not enabled or no active token exists for your account.",
+            "API integration is not enabled or no active access key exists for your account.",
         });
       }
-
       return reply.send({
-        data: { apiKey: token },
+        data: { accessKey: token, apiKey: token },
         meta: { source: "shamal-platform" },
       });
     },
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/fleet",
     "/v1/marafiq/viewer/fleet",
-    { schema: { summary: "Viewer fleet overview", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/fleet", async () => {
+    "Fleet overview",
+    async () => {
       const fleet = await fetchViewerFleet();
       return { data: fleet, meta: { source: "flighthub2" } };
-    }),
+    },
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/drone-telemetry",
     "/v1/marafiq/viewer/drone-telemetry",
-    { schema: { summary: "Viewer drone telemetry", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/drone-telemetry", async () => {
-      const result = await fetchViewerDroneTelemetry();
-      return result;
-    }),
+    "Drone telemetry",
+    async () => fetchViewerDroneTelemetry(),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/dock-telemetry",
     "/v1/marafiq/viewer/dock-telemetry",
-    { schema: { summary: "Viewer dock telemetry", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/dock-telemetry", async () => {
-      const result = await fetchViewerDockTelemetry();
-      return result;
-    }),
+    "Dock telemetry",
+    async () => fetchViewerDockTelemetry(),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/battery-status",
     "/v1/marafiq/viewer/battery-status",
-    { schema: { summary: "Viewer battery status", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/battery-status", async () => {
-      const result = await fetchViewerBatteryStatus();
-      return result;
-    }),
+    "Battery status",
+    async () => fetchViewerBatteryStatus(),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/gps-location",
     "/v1/marafiq/viewer/gps-location",
-    { schema: { summary: "Viewer GPS locations", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/gps-location", async () => {
-      const result = await fetchViewerGpsLocation();
-      return result;
-    }),
+    "GPS locations",
+    async () => fetchViewerGpsLocation(),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/online-status",
     "/v1/marafiq/viewer/online-status",
-    { schema: { summary: "Viewer online/offline status", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/online-status", async () => {
-      const result = await fetchViewerOnlineStatus();
-      return result;
-    }),
+    "Online/offline status",
+    async () => fetchViewerOnlineStatus(),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/camera",
     "/v1/marafiq/viewer/camera",
-    { schema: { summary: "Viewer dock live camera info", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/camera", async () => {
-      const result = await fetchViewerCameraStream("dock");
-      return result;
-    }),
+    "Dock live camera info",
+    async () => fetchViewerCameraStream("dock"),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/fpv",
     "/v1/marafiq/viewer/fpv",
-    { schema: { summary: "Viewer drone FPV stream info", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/fpv", async () => {
-      const result = await fetchViewerCameraStream("drone");
-      return result;
-    }),
+    "Drone FPV stream info",
+    async () => fetchViewerCameraStream("drone"),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/alerts-events",
     "/v1/marafiq/viewer/alerts-events",
-    { schema: { summary: "Viewer alerts and events", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/alerts-events", async () => {
-      const result = await fetchViewerAlertsEvents();
-      return result;
-    }),
+    "Alerts and events",
+    async () => fetchViewerAlertsEvents(),
   );
 
-  app.get(
+  registerDataRoute(
+    app,
+    "/v1/marafiq/integration/media-history",
     "/v1/marafiq/viewer/media-history",
-    { schema: { summary: "Viewer mission and media history", tags: ["Viewer Integration"] } },
-    scopedHandler("/v1/marafiq/viewer/media-history", async () => {
-      const result = await fetchViewerMediaHistory();
-      return result;
-    }),
+    "Mission and media history",
+    async () => fetchViewerMediaHistory(),
   );
 };
